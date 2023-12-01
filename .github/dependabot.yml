@@ -1,0 +1,16 @@
+version: 2
+updates:
+- package-ecosystem: bundler
+  directory: "/ruby/php"
+  schedule:
+    interval: daily
+    time: "01:00"
+    timezone: Europe/Copenhagen
+  open-pull-requests-limit: 99
+- package-ecosystem: bundler
+  directory: "/ruby/ruby"
+  schedule:
+    interval: daily
+    time: "01:00"
+    timezone: Europe/Copenhagen
+  open-pull-requests-limit: 99
