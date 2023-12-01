@@ -35,11 +35,11 @@ Gem::Specification.new do |s|
 
   s.specification_version = 3
 
-  s.add_runtime_dependency "php-serialize4ruby", ">= 0"
-  s.add_runtime_dependency "wref", ">= 0"
-  s.add_runtime_dependency "tsafe", ">= 0"
-  s.add_runtime_dependency "rspec", "~> 2.8.0"
-  s.add_runtime_dependency "rdoc", "~> 3.12"
-  s.add_runtime_dependency "bundler", ">= 1.0.0"
+  s.add_runtime_dependency "php-serialize4ruby"
+  s.add_runtime_dependency "wref"
+  s.add_runtime_dependency "tsafe"
+  s.add_runtime_dependency "rspec"
+  s.add_runtime_dependency "rdoc"
+  s.add_runtime_dependency "bundler"
   s.add_runtime_dependency "string-cases"
 end

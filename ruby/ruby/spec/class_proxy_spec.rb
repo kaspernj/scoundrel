@@ -40,6 +40,8 @@ describe "RubyProcess" do
 
   unless RUBY_ENGINE == "jruby"
     it "prepares for leak test by spawning a ton of string objects" do
+      require "digest"
+
       str = nil
 
       1000.times do
