@@ -16,12 +16,13 @@ describe("scoundrel", () => {
     await clientWebSocket.waitForOpened()
 
     const client = new Client(clientWebSocket)
-    const stringObject = await client.newObjectWithReference("Object")
+    const stringObject = await client.newObjectWithReference("Array")
 
-    await stringObject.callMethod("replace", "st", "ster")
+    await stringObject.callMethod("push", "test1")
+    await stringObject.callMethod("push", "test2")
 
     const result = await stringObject.serialize()
 
-    expect(result).toEqual("tester")
+    expect(result).toEqual(["test1", "test2"])
   })
 })

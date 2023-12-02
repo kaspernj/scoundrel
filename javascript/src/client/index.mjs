@@ -24,13 +24,17 @@ export default class Client {
 
     if (!result) throw new Error("Blank result given")
 
-    console.log("newObjectWithReference result", result)
-
     const id = result.object_id
     const reference = new Reference(this, id)
 
     this.references[id] = reference
 
     return reference
+  }
+
+  async serializeReference(referenceId) {
+    const json = await this.backend.send({command: "serialize_reference", reference_id: referenceId})
+
+    return JSON.parse(json)
   }
 }

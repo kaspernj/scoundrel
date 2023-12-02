@@ -7,15 +7,11 @@ export default class ServerClient {
   }
 
   onCommand = (commandId, data) => {
-    console.log("ServerClient onCommand", commandId, data)
-
     try {
       if (data.command == "new_object_with_reference") {
         const className = data.class_name
         const objectId = ++this.objectsCount
         let object
-
-        console.log("new_object_with_reference", {className})
 
         if (typeof className == "string") {
           object = new global[className](...data.args)
@@ -36,9 +32,16 @@ export default class ServerClient {
 
         if (!method) throw new Error(`No method called '${data.method_name}' on a '${object.constructor.name}'`)
 
-        const response = object[data.method_name](...data.args)
+        const response = method.call(object, ...data.args)
 
         this.respondToCommand(commandId, {response})
+      } else if (data.command == "serialize_reference") {
+        const referenceId = data.reference_id
+        const object = this.objects[referenceId]
+
+        if (!object) throw new Error(`No object by that ID: ${referenceId}`)
+
+        this.respondToCommand(commandId, JSON.stringify(object))
       } else {
         this.clientBackend.send({type: "command_response", command_id: commandId, error: `Unknown command: ${data.command}`})
       }

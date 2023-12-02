@@ -17,8 +17,6 @@ export default class WebSocketClient {
   onMessage = (rawData) => {
     const data = JSON.parse(rawData)
 
-    console.log("WebSocketClient message", data)
-
     if (!this.onCommandCallback) throw new Error("Command callback hasn't been set")
 
     this.onCommandCallback(data.command_id, data.data)

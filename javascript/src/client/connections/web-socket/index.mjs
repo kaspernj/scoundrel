@@ -19,8 +19,6 @@ export default class WebSocket {
   }
 
   onSocketMessage = (event) => {
-    console.log("onSocketMessage", event.data)
-
     const data = JSON.parse(event.data)
     const commandId = data.command_id
 
@@ -33,13 +31,12 @@ export default class WebSocket {
     if (data.error) {
       command.reject(data.error)
     } else {
-      console.log(`Resolving command ${commandId} with`, data.data)
       command.resolve(data.data)
     }
   }
 
   onSocketOpen = (event) => {
-    console.log("onSocketOpen")
+    // console.log("onSocketOpen")
   }
 
   send(data) {
