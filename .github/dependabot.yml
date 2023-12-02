@@ -1,14 +1,14 @@
 version: 2
 updates:
-- package-ecosystem: bundler
-  directory: "/ruby/php"
+- package-ecosystem: npm
+  directory: "/javascript"
   schedule:
     interval: daily
     time: "01:00"
     timezone: Europe/Copenhagen
   open-pull-requests-limit: 99
 - package-ecosystem: bundler
-  directory: "/ruby/ruby"
+  directory: "/ruby"
   schedule:
     interval: daily
     time: "01:00"
