@@ -2,7 +2,7 @@
 [![Test Coverage](https://codeclimate.com/github/kaspernj/php_process/badges/coverage.svg)](https://codeclimate.com/github/kaspernj/php_process)
 [![Build Status](https://img.shields.io/shippable/540e7b9d3479c5ea8f9ec239.svg)](https://app.shippable.com/projects/540e7b9d3479c5ea8f9ec239/builds/latest)
 
-# PhpProcess
+# Scoundrel::Php::Client
 
 This project helps developers use PHP libraries or extensions directly from Ruby. It was originally made in order to allow me to use the exellent PHPExcel directly in Ruby, but it can be used
 with any library or extension.
@@ -14,7 +14,7 @@ Here is a small example:
 require "rubygems"
 require "php_process"
 
-PhpProcess.new do |php|
+Scoundrel::Php::Client.new do |php|
   php.func("require_once", "#{__dir__}/PHPExcel/PHPExcel.php")
   objPHPExcel = php.new("PHPExcel")
 
@@ -41,7 +41,7 @@ end
 
 ## Using a custom path for PHP CLI
 ```ruby
-PhpProcess.new(cmd_php: "some/path/php") do |php|
+Scoundrel::Php::Client.new(cmd_php: "some/path/php") do |php|
 ```
 
 ## Eval'ing PHP-code

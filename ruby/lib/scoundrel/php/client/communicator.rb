@@ -1,4 +1,4 @@
-class Scoundrel::Php::ClientCommunicator
+class Scoundrel::Php::Client::Communicator
   attr_accessor :objects_handler
 
   def initialize(args)
@@ -26,7 +26,7 @@ class Scoundrel::Php::ClientCommunicator
     if @fatal
       message = @fatal
       @fatal = nil
-      error = ::Scoundrel::Php::ClientFatalError.new(message)
+      error = ::Scoundrel::Php::Client::FatalError.new(message)
 
       @responses.each_value do |queue|
         queue.push(error)

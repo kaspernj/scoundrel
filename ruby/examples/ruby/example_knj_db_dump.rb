@@ -24,7 +24,7 @@ threads = []
     begin
       thread_tables = tables.shift(tables_per_thread)
 
-      RubyProcess.new(debug: true).spawn_process do |rp|
+      Scoundrel::Ruby::Client.new(debug: true).spawn_process do |rp|
         rp.static(:Object, :require, "rubygems")
         rp.static(:Object, :require, "knjrbfw")
 

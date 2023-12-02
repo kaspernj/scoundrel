@@ -2,7 +2,7 @@ require "spec_helper"
 
 describe "RubyProcess" do
   it "should be able to do basic stuff" do
-    RubyProcess.new.spawn_process do |sp|
+    Scoundrel::Ruby::Client.new.spawn_process do |sp|
       sp.new(:String, "Wee")
       ts = []
 

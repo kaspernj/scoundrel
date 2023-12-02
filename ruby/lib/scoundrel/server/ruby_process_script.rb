@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby1.9
 
 require "base64"
-require "#{__dir__}/../lib/ruby_process.rb"
+require "#{__dir__}/../../scoundrel.rb"
 
 $stdin.sync = true
 $stdout.sync = true
@@ -25,7 +25,7 @@ end
 debug = true if ARGV.index("--debug") != nil
 raise "No PID given of parent process." unless pid
 
-rps = RubyProcess.new(
+rps = Scoundrel::Ruby::Client.new(
   in: $stdin,
   out: $stdout,
   err: $stderr,

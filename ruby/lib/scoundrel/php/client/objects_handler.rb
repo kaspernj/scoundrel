@@ -1,4 +1,4 @@
-class Scoundrel::Php::ClientObjectsHandler
+class Scoundrel::Php::Client::ObjectsHandler
   # A hash that contains links between Ruby object IDs and the PHP object IDs. It can be read because the proxy-objects adds their data to it.
   attr_reader :object_ids
   attr_accessor :communicator
@@ -43,7 +43,7 @@ class Scoundrel::Php::ClientObjectsHandler
 
   def spawn_by_id(id)
     $stderr.print "Spawn new proxy-obj!\n" if @debug
-    proxy_obj = ::Scoundrel::Php::ClientProxyObject.new(
+    proxy_obj = ::Scoundrel::Php::Client::ProxyObject.new(
       php_process: @php_process,
       objects_handler: self,
       communicator: @communicator,

@@ -1,4 +1,4 @@
-class Scoundrel::Php::ClientStderrHandler
+class Scoundrel::Php::Client::StderrHandler
   attr_accessor :communicator
 
   def initialize(args)

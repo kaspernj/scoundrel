@@ -1,10 +1,10 @@
 require "spec_helper"
 
-describe "PhpProcess" do
+describe "Scoundrel::Php::Client" do
   it "should be able  to work with constants and cache them" do
     require "timeout"
 
-    PhpProcess.new do |php|
+    Scoundrel::Php::Client.new do |php|
       php.func("define", "TEST_CONSTANT", 5)
       raise "Expected 'TEST_CONSTANT'-constant to exist but it didnt." unless php.func("defined", "TEST_CONSTANT")
 
@@ -18,14 +18,14 @@ describe "PhpProcess" do
   end
 
   it "should work with functions that doesnt take arguments" do
-    PhpProcess.new do |php|
+    Scoundrel::Php::Client.new do |php|
       pid = php.func("getmypid")
       expect(pid).to be > 0
     end
   end
 
   it "should work correctly with UTF-8 encoding" do
-    PhpProcess.new do |php|
+    Scoundrel::Php::Client.new do |php|
       test_str = "æøå"
       php.func("file_put_contents", "/tmp/php_process_test_encoding", test_str)
       test_str_read = File.read("/tmp/php_process_test_encoding")
@@ -34,14 +34,14 @@ describe "PhpProcess" do
   end
 
   it "should call functions with arguments" do
-    PhpProcess.new do |php|
+    Scoundrel::Php::Client.new do |php|
       res = php.func("explode", ";", "1;2;4;5")
       expect(res.length).to eq 4
     end
   end
 
   it "should work with arrays and convert them to hashes" do
-    PhpProcess.new do |php|
+    Scoundrel::Php::Client.new do |php|
       resp = php.eval("return array(1 => 2)")
       expect(resp.class).to eq Hash
       expect(resp[1]).to eq 2
@@ -49,7 +49,7 @@ describe "PhpProcess" do
   end
 
   it "should spawn instances of classes and set variables on them" do
-    PhpProcess.new do |php|
+    Scoundrel::Php::Client.new do |php|
       proxy_obj = php.new("stdClass")
       proxy_obj.__set_var("testvar", 5)
       expect(proxy_obj.__get_var("testvar")).to eq 5
@@ -58,14 +58,14 @@ describe "PhpProcess" do
 
   it "should be able to report fatal errors back" do
     expect do
-      PhpProcess.new do |php|
+      Scoundrel::Php::Client.new do |php|
         php.func(:require_once, "file_that_doesnt_exist.php")
       end
-    end.to raise_error(Scoundrel::Php::ClientFatalError)
+    end.to raise_error(Scoundrel::Php::Client::FatalError)
   end
 
   it "should be able to create functions and call them" do
-    PhpProcess.new do |php|
+    Scoundrel::Php::Client.new do |php|
       $callback_from_php = "test"
       func = php.create_func do |arg|
         $callback_from_php = arg
@@ -78,7 +78,7 @@ describe "PhpProcess" do
   end
 
   it "should survive a lot of threadded calls in a row" do
-    PhpProcess.new do |php|
+    Scoundrel::Php::Client.new do |php|
       ts = []
       1.upto(10) do |_tcount|
         ts << Thread.new do
@@ -99,7 +99,7 @@ describe "PhpProcess" do
   end
 
   it "should catch calls to functions that does not exist" do
-    PhpProcess.new do |php|
+    Scoundrel::Php::Client.new do |php|
       expect do
         php.func("func_that_does_not_exist", "kasper")
       end.to raise_error(NoMethodError)
@@ -107,7 +107,7 @@ describe "PhpProcess" do
   end
 
   it "should not do the strip error when errors occur" do
-    PhpProcess.new do |php|
+    Scoundrel::Php::Client.new do |php|
       100.times do
         expect do
           php.func("func_that_does_not_exist")
@@ -121,10 +121,10 @@ describe "PhpProcess" do
   end
 
   it "should throw destroyed error when the process has been destroyed" do
-    PhpProcess.new do |php|
+    Scoundrel::Php::Client.new do |php|
       expect do
         php.eval("some_fatal_error()")
-      end.to raise_error(Scoundrel::Php::ClientFatalError)
+      end.to raise_error(Scoundrel::Php::Client::FatalError)
 
       expect do
         php.func("getmypid")
@@ -133,7 +133,7 @@ describe "PhpProcess" do
   end
 
   it "should call methods on classes" do
-    PhpProcess.new do |php|
+    Scoundrel::Php::Client.new do |php|
       php.eval("
         class TestClass{
           function __construct($test){
@@ -157,7 +157,7 @@ describe "PhpProcess" do
     $stdout = out
 
     begin
-      PhpProcess.new do |php|
+      Scoundrel::Php::Client.new do |php|
         php.func("echo", "Hello world!")
       end
     ensure
@@ -173,7 +173,7 @@ describe "PhpProcess" do
     $stdout = out
 
     begin
-      PhpProcess.new do |php|
+      Scoundrel::Php::Client.new do |php|
         php.func("echo", "Hello world!\n")
       end
     ensure
@@ -189,7 +189,7 @@ describe "PhpProcess" do
     $stderr = err
 
     begin
-      PhpProcess.new do |php|
+      Scoundrel::Php::Client.new do |php|
         php.func(:unlink, "path/that/doesnt/exist")
       end
     ensure

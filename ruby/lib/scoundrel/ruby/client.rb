@@ -22,7 +22,7 @@ class Scoundrel::Ruby::Client
 
   #Autoloader for subclasses.
   def self.const_missing(name)
-    file_path = "#{::File.realpath(__dir__)}/ruby_process/#{::StringCases.camel_to_snake(name)}.rb"
+    file_path = "#{::File.realpath(__dir__)}/#{::StringCases.camel_to_snake(name)}.rb"
 
     if File.exists?(file_path)
       require file_path
@@ -34,7 +34,7 @@ class Scoundrel::Ruby::Client
 
   #Constructor.
   #===Examples
-  # RubyProcess.new.spawn_process do |rp|
+  # Scoundrel::Ruby::Client.new.spawn_process do |rp|
   #   str = rp.new(:String, "Kasper")
   # end
   def initialize(args = {})
@@ -73,7 +73,7 @@ class Scoundrel::Ruby::Client
 
   #Spawns a new process in the same Ruby-inteterpeter as the current one.
   #===Examples
-  # rp = RubyProcess.new.spawn_process
+  # rp = Scoundrel::Ruby::Client.new.spawn_process
   # rp.str_eval("return 10").__rp_marshal #=> 10
   # rp.destroy
   def spawn_process(args = nil)
@@ -90,7 +90,7 @@ class Scoundrel::Ruby::Client
       end
     end
 
-    cmd << " \"#{File.realpath(__dir__)}/server/ruby_process_script.rb\" --pid=#{@my_pid}"
+    cmd << " \"#{File.realpath(__dir__)}/../server/ruby_process_script.rb\" --pid=#{@my_pid}"
     cmd << " --debug" if @args[:debug]
     cmd << " \"--title=#{@args[:title]}\"" unless @args[:title].to_s.strip.empty?
 
@@ -310,7 +310,7 @@ private
     end
 
     @proxy_objs_unsets.delete(id)
-    proxy_obj = RubyProcess::ProxyObject.new(self, id, pid)
+    proxy_obj = Scoundrel::Ruby::ProxyObject.new(self, id, pid)
     @proxy_objs[id] = proxy_obj
     @proxy_objs_ids[proxy_obj.__id__] = id
     ObjectSpace.define_finalizer(proxy_obj, method(:proxyobj_finalizer))
@@ -473,7 +473,7 @@ private
 
   def destroy_proxy_objects
     @proxy_objs.each do |id, proxy_object|
-      proxy_object.__rp_destroy if proxy_object.is_a?(RubyProcess::ProxyObject)
+      proxy_object.__rp_destroy if proxy_object.is_a?(Scoundrel::Ruby::ProxyObject)
     end
   end
 end

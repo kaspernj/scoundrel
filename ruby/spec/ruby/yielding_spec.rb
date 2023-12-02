@@ -7,7 +7,7 @@ describe Scoundrel::Ruby::Client do
 
       expected_number = 1
       sp_array.each do |number|
-        number.should be_a Scoundrel::Ruby::Client::ProxyObject
+        number.should be_a Scoundrel::Ruby::ProxyObject
         number.__rp_marshal.should eq expected_number
         expected_number += 2
       end

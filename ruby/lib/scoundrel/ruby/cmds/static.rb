@@ -1,4 +1,4 @@
-class RubyProcess
+class Scoundrel::Ruby::Client
   #Calls a static method on the process-side.
   #===Examples
   # rp.static(:File, :open, "/tmp/somefile", "w") do |fp|

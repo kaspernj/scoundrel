@@ -1,2 +1,2 @@
-class Scoundrel::Php::ClientFatalError < RuntimeError
+class Scoundrel::Php::Client::FatalError < RuntimeError
 end

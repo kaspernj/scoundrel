@@ -1,15 +1,15 @@
 #This class is used to seamlessly use leaky classes without working through 'RubyProcess'.
 #===Examples
-#  RubyProcess::ClassProxy.run do |data|
+#  Scoundrel::Ruby::ClassProxy.run do |data|
 #    data[:subproc].static(:Object, :require, "rubygems")
 #    data[:subproc].static(:Object, :require, "rexml/document")
 #
-#    doc = RubyProcess::ClassProxy::REXML::Document.new("test")
+#    doc = Scoundrel::Ruby::ClassProxy::REXML::Document.new("test")
 #    strio = StringIO.new
 #    doc.write(strio)
 #    puts strio.string #=> "<test/>"
 #    raise "REXML shouldnt be defined?" if Kernel.const_defined?(:REXML)
-class RubyProcess::ClassProxy
+class Scoundrel::Ruby::ClassProxy
   #Lock is used to to create new Ruby-process-instances and not doing double-counts.
   @@lock = Mutex.new
 
@@ -30,7 +30,7 @@ class RubyProcess::ClassProxy
         @@subproc = nil
       end
 
-      @@subproc ||= RubyProcess.new(title: "ruby_process_cproxy", debug: false).spawn_process
+      @@subproc ||= Scoundrel::Ruby::Client.new(title: "ruby_process_cproxy", debug: false).spawn_process
       @@instances += 1
     end
 
@@ -66,9 +66,9 @@ class RubyProcess::ClassProxy
     end
   end
 
-  #Creates the new constant under the 'RubyProcess::ClassProxy'-namespace.
+  #Creates the new constant under the 'Scoundrel::Ruby::ClassProxy'-namespace.
   def self.const_missing(name)
-    RubyProcess::ClassProxy.load_class(self, name) unless const_defined?(name)
+    Scoundrel::Ruby::ClassProxy.load_class(self, name) unless const_defined?(name)
     raise "Still not created on const: '#{name}'." unless const_defined?(name)
     return const_get(name)
   end
@@ -78,22 +78,22 @@ class RubyProcess::ClassProxy
     const.const_set(name, Class.new{
       #Use 'const_missing' to auto-create missing sub-constants recursivly.
       def self.const_missing(name)
-        RubyProcess::ClassProxy.load_class(self, name) unless const_defined?(name)
+        Scoundrel::Ruby::ClassProxy.load_class(self, name) unless const_defined?(name)
         raise "Still not created on const: '#{name}'." unless const_defined?(name)
         return const_get(name)
       end
 
       #Manipulate 'new'-method return proxy-objects instead of real objects.
       def self.new(*args, &blk)
-        name_match = self.name.to_s.match(/\ARubyProcess::ClassProxy::(.+)\Z/)
+        name_match = self.name.to_s.match(/\AScoundrel::Ruby::ClassProxy::(.+)\Z/)
         class_name = name_match[1]
-        return RubyProcess::ClassProxy.subproc.new(class_name, *args, &blk)
+        return Scoundrel::Ruby::ClassProxy.subproc.new(class_name, *args, &blk)
       end
 
       def self.method_missing(method_name, *args, &blk)
-        name_match = self.name.to_s.match(/\ARubyProcess::ClassProxy::(.+)\Z/)
+        name_match = self.name.to_s.match(/\AScoundrel::Ruby::ClassProxy::(.+)\Z/)
         class_name = name_match[1]
-        return RubyProcess::ClassProxy.subproc.static(class_name, method_name, *args, &blk)
+        return Scoundrel::Ruby::ClassProxy.subproc.static(class_name, method_name, *args, &blk)
       end
     })
   end

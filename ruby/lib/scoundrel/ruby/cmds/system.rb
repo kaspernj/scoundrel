@@ -1,4 +1,4 @@
-class RubyProcess
+class Scoundrel::Ruby::Client
   #Closes the process by executing exit.
   def cmd_exit(obj)
     exit

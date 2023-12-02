@@ -1,5 +1,5 @@
 #This class handels the calling of methods on objects in the other process seamlessly.
-class RubyProcess::ProxyObject
+class Scoundrel::Ruby::ProxyObject
   #Hash that contains various information about the proxyobj.
   attr_reader :__rp_rp, :__rp_id, :__rp_pid
 

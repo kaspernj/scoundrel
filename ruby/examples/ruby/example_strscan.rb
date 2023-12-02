@@ -3,7 +3,7 @@
 require "rubygems"
 require "ruby_process"
 
-RubyProcess.new.spawn_process do |rp|
+Scoundrel::Ruby::Client.new.spawn_process do |rp|
   #Spawns string in the subprocess.
   str = rp.new(:String, "Kasper is 26 years old")
 

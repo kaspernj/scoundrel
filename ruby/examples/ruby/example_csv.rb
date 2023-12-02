@@ -3,7 +3,7 @@
 require "rubygems"
 require "ruby_process"
 
-RubyProcess.new.spawn_process do |rp|
+Scoundrel::Ruby::Client.new.spawn_process do |rp|
   rp.static(:Object, :require, "csv")
 
   rp.static(:CSV, :open, "test.csv", "w") do |csv|

@@ -8,17 +8,17 @@ require "string-cases"
 
 # This class starts a PHP-process and proxies various calls to it. It also spawns proxy-objects, which can you can call like they were normal Ruby-objects.
 #===Examples
-# php = PhpProcess.new
+# php = Scoundrel::Php::Client.new
 # print "PID of PHP-process: #{php.func("getmypid")}\n"
 # print "Explode test: #{php.func("explode", ";", "1;2;3;4;5")}\n"
 class Scoundrel::Php::Client
   # Autoloader for subclasses.
   def self.const_missing(name)
-    path = "#{__dir__}/php_process/#{::StringCases.camel_to_snake(name)}.rb"
+    path = "#{__dir__}/client/#{::StringCases.camel_to_snake(name)}.rb"
 
     if File.exist?(path)
       require path
-      return ::PhpProcess.const_get(name) if ::PhpProcess.const_defined?(name)
+      return ::Scoundrel::Php::Client.const_get(name) if ::Scoundrel::Php::Client.const_defined?(name)
     end
 
     super
@@ -32,7 +32,7 @@ class Scoundrel::Php::Client
   # Spawns various used variables, launches the process and more.
   #===Examples
   # If you want debugging printed to stderr:
-  # php = PhpProcess.new(debug: true)
+  # php = Scoundrel::Php::Client.new(debug: true)
   INITIALIZE_VALID_ARGS = [:debug, :debug_output, :debug_stderr, :cmd_php, :on_err].freeze
   def initialize(args = {})
     parse_args_and_set_vars(args)
@@ -58,7 +58,7 @@ class Scoundrel::Php::Client
     @debug = @args[:debug]
     @debug_output = @args[:debug_output]
     @constant_val_cache = Tsafe::MonHash.new
-    @objects_handler = ::Scoundrel::Php::ClientObjectsHandler.new(php_process: self)
+    @objects_handler = ::Scoundrel::Php::Client::ObjectsHandler.new(php_process: self)
 
     # Used for 'create_func'.
     @callbacks = {}
@@ -79,11 +79,11 @@ class Scoundrel::Php::Client
     @stdout.sync = true
     @stdout.set_encoding("utf-8:iso-8859-1")
 
-    @stderr_handler = ::Scoundrel::Php::ClientStderrHandler.new(php_process: self)
+    @stderr_handler = ::Scoundrel::Php::Client::StderrHandler.new(php_process: self)
 
     check_php_process_startup
 
-    @communicator = ::Scoundrel::Php::ClientCommunicator.new(php_process: self)
+    @communicator = ::Scoundrel::Php::Client::Communicator.new(php_process: self)
     @communicator.objects_handler = @objects_handler
     @objects_handler.communicator = @communicator
     @stderr_handler.communicator = @communicator
@@ -154,9 +154,9 @@ class Scoundrel::Php::Client
 
   # Parses argument-data into special hashes that can be used on the PHP-side. It is public because the proxy-objects uses it. Normally you would never use it.
   def parse_data(data)
-    if data.is_a?(Scoundrel::Php::ClientProxyObject)
+    if data.is_a?(Scoundrel::Php::Client::ProxyObject)
       return {type: :proxyobj, id: data.args[:id]}
-    elsif data.is_a?(Scoundrel::Php::ClientCreatedFunction)
+    elsif data.is_a?(Scoundrel::Php::Client::CreatedFunction)
       return {type: :php_process_created_function, id: data.args[:id]}
     elsif data.is_a?(Hash)
       newhash = {}
@@ -189,7 +189,7 @@ class Scoundrel::Php::Client
     func = nil
     @callbacks_mutex.synchronize do
       callback_id = @callbacks_count
-      func = Scoundrel::Php::ClientCreatedFunction.new(php_process: self, communicator: @communicator, id: callback_id)
+      func = Scoundrel::Php::Client::CreatedFunction.new(php_process: self, communicator: @communicator, id: callback_id)
       @callbacks[callback_id] = {block: block, func: func, id: callback_id}
       @callbacks_count += 1
     end
@@ -276,7 +276,11 @@ private
       end
     end
 
-    cmd_str << " \"#{__dir__}/../../../php/server/server.php\""
+    server_script_path = File.realpath("#{__dir__}/../../../../php/server/server.php")
+
+    raise "Couldn't find server script: #{server_script_path}" unless File.exists?(server_script_path)
+
+    cmd_str << " \"#{server_script_path}\""
     cmd_str
   end
 

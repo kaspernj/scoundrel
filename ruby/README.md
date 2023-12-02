@@ -1,4 +1,4 @@
-# RubyProcess
+# Scoundrel
 
 Start another Ruby process and manipulate it almost seamlessly.
 
@@ -10,7 +10,7 @@ The CSV lib will not be loaded in the main process and the writing of the file w
 require "rubygems"
 require "ruby_process"
 
-RubyProcess.new.spawn_process do |rp|
+Scoundrel::Ruby::Client.new.spawn_process do |rp|
   rp.static(:Object, :require, "csv")
 
   rp.static(:CSV, :open, "test.csv", "w") do |csv|
@@ -36,7 +36,7 @@ gem "ruby_process"
 With a block.
 
 ```ruby
-RubyProcess.new.spawn_process do |rp|
+Scoundrel::Ruby::Client.new.spawn_process do |rp|
   rp.static(:File, :open, "some_file", "w") do |fp|
     fp.write("Test!")
   end
@@ -46,19 +46,19 @@ end
 Almost seamless mode with ClassProxy.
 
 ```ruby
-RubyProcess::ClassProxy.run do |data|
+Scoundrel::Ruby::ClassProxy.run do |data|
   sp = data[:subproc]
   sp.static(:Object, :require, "tempfile")
 
   # Tempfile will be created in the subprocess and not in the current process.
-  temp_file = RubyProcess::ClassProxy::Tempfile("temp")
+  temp_file = Scoundrel::Ruby::ClassProxy::Tempfile("temp")
 end
 ```
 
 As a variable.
 
 ```ruby
-rp = RubyProcess.new(debug: false)
+rp = Scoundrel::Ruby::Client.new(debug: false)
 rp.spawn_process
 test_string = rp.new(:String, "Test")
 ```
@@ -112,4 +112,3 @@ end
 
 Copyright (c) 2012 Kasper Johansen. See LICENSE.txt for
 further details.
-

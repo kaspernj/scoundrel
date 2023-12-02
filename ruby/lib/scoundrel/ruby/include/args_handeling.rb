@@ -1,4 +1,4 @@
-class RubyProcess
+class Scoundrel::Ruby::Client
   #Recursivly parses arrays and hashes into proxy-object-hashes.
   def parse_args(args)
     if args.is_a?(Array)
@@ -32,7 +32,7 @@ private
     return obj if obj.is_a?(TrueClass) || obj.is_a?(FalseClass) || obj.is_a?(NilClass)
 
     #The object is a proxy-obj - just return its arguments that contains the true 'my_pid'.
-    if obj.is_a?(RubyProcess::ProxyObject)
+    if obj.is_a?(Scoundrel::Ruby::ProxyObject)
       debug "Returning from proxy-obj: (ID: #{obj.args.fetch(:id)}, PID: #{obj.__rp_pid}).\n" if @debug
       return {type: :proxy_obj, id: obj.__rp_id, pid: obj.__rp_pid}
     end

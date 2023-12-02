@@ -4,7 +4,7 @@ require "rubygems"
 require "ruby_process"
 
 fpath = "/tmp/somefile"
-RubyProcess.new.spawn_process do |rp|
+Scoundrel::Ruby::Client.new.spawn_process do |rp|
   #Opens file in subprocess.
   rp.static(:File, :open, fpath, "w") do |fp|
     #Writes to file in subprocess.
