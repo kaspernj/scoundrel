@@ -111,7 +111,7 @@ class Scoundrel::Php::Client
     return unless @responses
 
     @responses.each_values do |queue|
-      queue.push(::Scoundrel::Php::ClientDestroyedError.new)
+      queue.push(::Scoundrel::Php::Client::DestroyedError.new)
     end
   end
 

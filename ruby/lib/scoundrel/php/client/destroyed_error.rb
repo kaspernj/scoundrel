@@ -1,2 +1,2 @@
-class Scoundrel::Php::ClientDestroyedError < RuntimeError
+class Scoundrel::Php::Client::DestroyedError < RuntimeError
 end

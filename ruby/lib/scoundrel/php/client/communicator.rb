@@ -17,7 +17,7 @@ class Scoundrel::Php::Client::Communicator
 
   # Proxies to 'communicate_real' but calls 'flush_unset_ids' first.
   def communicate(hash)
-    raise ::Scoundrel::Php::ClientDestroyedError if @php_process.destroyed?
+    raise ::Scoundrel::Php::Client::DestroyedError if @php_process.destroyed?
     @objects_handler.flush_unset_ids
     communicate_real(hash)
   end
@@ -35,7 +35,7 @@ class Scoundrel::Php::Client::Communicator
       $stderr.puts "php_process: Throwing fatal error for: #{caller}" if @debug
       @php_process.destroy
     elsif @php_process.destroyed?
-      error = ::Scoundrel::Php::ClientDestroyedError.new
+      error = ::Scoundrel::Php::Client::DestroyedError.new
       @responses.each_value do |queue|
         queue.push(error)
       end
@@ -115,7 +115,7 @@ private
 
   def generate_php_error(resp)
     raise ::Kernel.const_get(resp.fetch("ruby_type")), resp.fetch("msg") if resp.key?("ruby_type")
-    raise ::Scoundrel::Php::ClientPhpError, resp.fetch("msg")
+    raise ::Scoundrel::Php::Client::PhpError, resp.fetch("msg")
   rescue => e
     # This adds the PHP-backtrace to the Ruby-backtrace, so it looks like it is part of the same application, which is kind of is.
     php_bt = []

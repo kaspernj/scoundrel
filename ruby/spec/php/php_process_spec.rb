@@ -128,7 +128,7 @@ describe "Scoundrel::Php::Client" do
 
       expect do
         php.func("getmypid")
-      end.to raise_error(Scoundrel::Php::ClientDestroyedError)
+      end.to raise_error(Scoundrel::Php::Client::DestroyedError)
     end
   end
 

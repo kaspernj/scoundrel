@@ -69,9 +69,9 @@ class php_process{
         }elseif($args["type"] == "new"){
           $this->new_object($id, $args);
         }elseif(in_array($args["type"], $this->proxy_to_func)){
-          $this->$args["type"]($id, $args);
+          $this->{$args["type"]}($id, $args);
         }else{
-          throw new exception("Unknown send-type: " . $args["type"] . " (" . implode(", ", array_keys($args)) . ") (" . base64_decode($data[2]) . ")");
+          throw new exception("Unknown send-type: " . json_encode($args) . " (" . implode(", ", array_keys($args)) . ") (" . base64_decode($data[2]) . ")");
         }
       }else{
         throw new exception("Invalid type: " . $type);
@@ -293,7 +293,11 @@ class php_process{
   //Creates a function which can be used for callbacks on the Ruby-side.
   function create_func($id, $args){
     $cb_id = $args["callback_id"];
-    $func = create_function("", "global \$php_process; \$php_process->call_back_created_func(" . $cb_id . ", func_get_args());");
+    $func = function() use ($cb_id) {
+      global $php_process;
+      $php_process->call_back_created_func($cb_id, func_get_args());
+    };
+
     if (!$func){
       throw new exception("Could not create function.");
     }
