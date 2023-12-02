@@ -1,10 +1,10 @@
 rvm: true
 builds:
   build_1:
-    name: Ruby - PHP
+    name: Ruby
     script:
-      - cd ruby/php && bundle && bundle exec rspec
+      - cd ruby && bundle && bundle exec rspec
   build_2:
-    name: Ruby - Ruby
+    name: JavaScript
     script:
-      - cd ruby/ruby && bundle && bundle exec rspec
+      - cd javascript && npm install && npm test

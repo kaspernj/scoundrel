@@ -100,4 +100,3 @@ php.func("define", "TEST_CONSTANT", 5)
 
 Copyright (c) 2012 Kasper Johansen. See LICENSE.txt for
 further details.
-

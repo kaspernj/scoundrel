@@ -1,0 +1,28 @@
+{
+  "name": "scoundrel",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.mjs",
+  "scripts": {
+    "test": "jasmine"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kaspernj/scoundrel.git"
+  },
+  "keywords": [
+    "scoundrel"
+  ],
+  "author": "k@spernj.org",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/kaspernj/scoundrel/issues"
+  },
+  "homepage": "https://github.com/kaspernj/scoundrel#readme",
+  "devDependencies": {
+    "jasmine": "^5.1.0"
+  },
+  "dependencies": {
+    "ws": "^8.14.2"
+  }
+}

@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    scoundrel_php (0.0.1)
+    scoundrel_ruby (0.0.1)
       bundler
       php-serialize4ruby
       rdoc
@@ -41,7 +41,7 @@ PLATFORMS
   x86_64-linux
 
 DEPENDENCIES
-  scoundrel_php!
+  scoundrel_ruby!
 
 BUNDLED WITH
    2.3.8
