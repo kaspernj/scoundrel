@@ -1,6 +1,4 @@
-# coding: utf-8
-
-require File.expand_path(File.dirname(__FILE__) + "/spec_helper")
+require "spec_helper"
 
 describe "PhpProcess" do
   it "should be able  to work with constants and cache them" do
@@ -63,7 +61,7 @@ describe "PhpProcess" do
       PhpProcess.new do |php|
         php.func(:require_once, "file_that_doesnt_exist.php")
       end
-    end.to raise_error(PhpProcess::FatalError)
+    end.to raise_error(Scoundrel::Php::ClientFatalError)
   end
 
   it "should be able to create functions and call them" do
@@ -126,11 +124,11 @@ describe "PhpProcess" do
     PhpProcess.new do |php|
       expect do
         php.eval("some_fatal_error()")
-      end.to raise_error(PhpProcess::FatalError)
+      end.to raise_error(Scoundrel::Php::ClientFatalError)
 
       expect do
         php.func("getmypid")
-      end.to raise_error(PhpProcess::DestroyedError)
+      end.to raise_error(Scoundrel::Php::ClientDestroyedError)
     end
   end
 

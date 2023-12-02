@@ -7,7 +7,7 @@ require "php_process"
 php = PhpProcess.new
 
 # Load PHPExcel (can be downloaded here: 'http://phpexcel.codeplex.com/releases/view/45412')
-php.func("require_once", "#{File.dirname(__FILE__)}/PHPExcel/PHPExcel.php")
+php.func("require_once", "#{__dir__}/PHPExcel/PHPExcel.php")
 
 # Create new PHPExcel object
 print "#{Time.now} Create new PHPExcel object\n"

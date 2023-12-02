@@ -15,7 +15,7 @@ require "rubygems"
 require "php_process"
 
 PhpProcess.new do |php|
-  php.func("require_once", "#{File.dirname(__FILE__)}/PHPExcel/PHPExcel.php")
+  php.func("require_once", "#{__dir__}/PHPExcel/PHPExcel.php")
   objPHPExcel = php.new("PHPExcel")
 
   objPHPExcel.getProperties.setCreator("Kasper Johansen")

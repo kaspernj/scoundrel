@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby1.9
 
 require "base64"
-require "#{File.dirname(__FILE__)}/../lib/ruby_process.rb"
+require "#{__dir__}/../lib/ruby_process.rb"
 
 $stdin.sync = true
 $stdout.sync = true

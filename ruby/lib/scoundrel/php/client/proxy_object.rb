@@ -3,7 +3,7 @@
 # php = PhpProcess.new
 # pe = php.new("PHPExcel")
 # pe.getProperties.setCreator("kaspernj")
-class PhpProcess::ProxyObject
+class Scoundrel::Php::ClientProxyObject
   # Contains the various data about the object like ID and class. It is readable because it needs to be converted to special hashes when used as arguments.
   attr_reader :args
 

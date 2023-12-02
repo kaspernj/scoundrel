@@ -11,10 +11,10 @@ require "string-cases"
 # php = PhpProcess.new
 # print "PID of PHP-process: #{php.func("getmypid")}\n"
 # print "Explode test: #{php.func("explode", ";", "1;2;3;4;5")}\n"
-class PhpProcess
+class Scoundrel::Php::Client
   # Autoloader for subclasses.
   def self.const_missing(name)
-    path = "#{File.dirname(__FILE__)}/php_process/#{::StringCases.camel_to_snake(name)}.rb"
+    path = "#{__dir__}/php_process/#{::StringCases.camel_to_snake(name)}.rb"
 
     if File.exist?(path)
       require path
@@ -26,7 +26,7 @@ class PhpProcess
 
   # Returns the path to the gem.
   def self.path
-    File.realpath(File.dirname(__FILE__))
+    File.realpath(__dir__)
   end
 
   # Spawns various used variables, launches the process and more.
@@ -58,7 +58,7 @@ class PhpProcess
     @debug = @args[:debug]
     @debug_output = @args[:debug_output]
     @constant_val_cache = Tsafe::MonHash.new
-    @objects_handler = ::PhpProcess::ObjectsHandler.new(php_process: self)
+    @objects_handler = ::Scoundrel::Php::ClientObjectsHandler.new(php_process: self)
 
     # Used for 'create_func'.
     @callbacks = {}
@@ -79,11 +79,11 @@ class PhpProcess
     @stdout.sync = true
     @stdout.set_encoding("utf-8:iso-8859-1")
 
-    @stderr_handler = ::PhpProcess::StderrHandler.new(php_process: self)
+    @stderr_handler = ::Scoundrel::Php::ClientStderrHandler.new(php_process: self)
 
     check_php_process_startup
 
-    @communicator = ::PhpProcess::Communicator.new(php_process: self)
+    @communicator = ::Scoundrel::Php::ClientCommunicator.new(php_process: self)
     @communicator.objects_handler = @objects_handler
     @objects_handler.communicator = @communicator
     @stderr_handler.communicator = @communicator
@@ -111,7 +111,7 @@ class PhpProcess
     return unless @responses
 
     @responses.each_values do |queue|
-      queue.push(::PhpProcess::DestroyedError.new)
+      queue.push(::Scoundrel::Php::ClientDestroyedError.new)
     end
   end
 
@@ -154,9 +154,9 @@ class PhpProcess
 
   # Parses argument-data into special hashes that can be used on the PHP-side. It is public because the proxy-objects uses it. Normally you would never use it.
   def parse_data(data)
-    if data.is_a?(PhpProcess::ProxyObject)
+    if data.is_a?(Scoundrel::Php::ClientProxyObject)
       return {type: :proxyobj, id: data.args[:id]}
-    elsif data.is_a?(PhpProcess::CreatedFunction)
+    elsif data.is_a?(Scoundrel::Php::ClientCreatedFunction)
       return {type: :php_process_created_function, id: data.args[:id]}
     elsif data.is_a?(Hash)
       newhash = {}
@@ -189,7 +189,7 @@ class PhpProcess
     func = nil
     @callbacks_mutex.synchronize do
       callback_id = @callbacks_count
-      func = PhpProcess::CreatedFunction.new(php_process: self, communicator: @communicator, id: callback_id)
+      func = Scoundrel::Php::ClientCreatedFunction.new(php_process: self, communicator: @communicator, id: callback_id)
       @callbacks[callback_id] = {block: block, func: func, id: callback_id}
       @callbacks_count += 1
     end
@@ -276,8 +276,7 @@ private
       end
     end
 
-    cmd_str << " \"#{File.dirname(__FILE__)}/php_process/php_script.php\""
-
+    cmd_str << " \"#{__dir__}/../../../php/server/server.php\""
     cmd_str
   end
 

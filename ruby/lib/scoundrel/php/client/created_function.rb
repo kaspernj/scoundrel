@@ -10,7 +10,7 @@
 # $callback_from_php #=> "test2"
 #
 # The function could also be called from PHP, but for debugging purposes it can also be done from Ruby.
-class PhpProcess::CreatedFunction
+class Scoundrel::Php::ClientCreatedFunction
   # Various data about the create function will can help identify it on both the Ruby and PHP-side.
   attr_reader :args
 

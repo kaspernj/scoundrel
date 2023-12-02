@@ -1,4 +1,4 @@
-class PhpProcess::Communicator
+class Scoundrel::Php::ClientCommunicator
   attr_accessor :objects_handler
 
   def initialize(args)
@@ -17,7 +17,7 @@ class PhpProcess::Communicator
 
   # Proxies to 'communicate_real' but calls 'flush_unset_ids' first.
   def communicate(hash)
-    raise ::PhpProcess::DestroyedError if @php_process.destroyed?
+    raise ::Scoundrel::Php::ClientDestroyedError if @php_process.destroyed?
     @objects_handler.flush_unset_ids
     communicate_real(hash)
   end
@@ -26,7 +26,7 @@ class PhpProcess::Communicator
     if @fatal
       message = @fatal
       @fatal = nil
-      error = ::PhpProcess::FatalError.new(message)
+      error = ::Scoundrel::Php::ClientFatalError.new(message)
 
       @responses.each_value do |queue|
         queue.push(error)
@@ -35,7 +35,7 @@ class PhpProcess::Communicator
       $stderr.puts "php_process: Throwing fatal error for: #{caller}" if @debug
       @php_process.destroy
     elsif @php_process.destroyed?
-      error = ::PhpProcess::DestroyedError.new
+      error = ::Scoundrel::Php::ClientDestroyedError.new
       @responses.each_value do |queue|
         queue.push(error)
       end
@@ -115,7 +115,7 @@ private
 
   def generate_php_error(resp)
     raise ::Kernel.const_get(resp.fetch("ruby_type")), resp.fetch("msg") if resp.key?("ruby_type")
-    raise ::PhpProcess::PhpError, resp.fetch("msg")
+    raise ::Scoundrel::Php::ClientPhpError, resp.fetch("msg")
   rescue => e
     # This adds the PHP-backtrace to the Ruby-backtrace, so it looks like it is part of the same application, which is kind of is.
     php_bt = []

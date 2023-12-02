@@ -8,21 +8,21 @@ require "timeout"
 require "rbconfig"
 
 #This class can communicate with another Ruby-process. It tries to integrate the work in the other process as seamless as possible by using proxy-objects.
-class RubyProcess
+class Scoundrel::Ruby::Client
   attr_reader :finalize_count, :pid
 
   #Require all the different commands.
-  dir = "#{File.dirname(__FILE__)}/../cmds"
+  dir = "#{__dir__}/cmds"
   Dir.foreach(dir) do |file|
     require "#{dir}/#{file}" if file =~ /\.rb$/
   end
 
   #Methods for handeling arguments and proxy-objects in arguments.
-  require "#{File.dirname(__FILE__)}/../include/args_handeling"
+  require "#{__dir__}/include/args_handeling"
 
   #Autoloader for subclasses.
   def self.const_missing(name)
-    file_path = "#{::File.realpath(::File.dirname(__FILE__))}/ruby_process/#{::StringCases.camel_to_snake(name)}.rb"
+    file_path = "#{::File.realpath(__dir__)}/ruby_process/#{::StringCases.camel_to_snake(name)}.rb"
 
     if File.exists?(file_path)
       require file_path
@@ -90,7 +90,7 @@ class RubyProcess
       end
     end
 
-    cmd << " \"#{File.realpath(File.dirname(__FILE__))}/../scripts/ruby_process_script.rb\" --pid=#{@my_pid}"
+    cmd << " \"#{File.realpath(__dir__)}/server/ruby_process_script.rb\" --pid=#{@my_pid}"
     cmd << " --debug" if @args[:debug]
     cmd << " \"--title=#{@args[:title]}\"" unless @args[:title].to_s.strip.empty?
 
