@@ -25,26 +25,10 @@ class WebSocketClient:
 
       debug(f"Data recieved as: {data}!")
 
-      if command == "new_object_with_reference":
-        class_name = data["data"]["class_name"]
+      command_method = getattr(self, f"command_{command}")
 
-        if class_name == "[]":
-          instance = []
-        else:
-          klass = eval(class_name)
-          instance = klass()
-
-        self.objects_count += 1
-        object_id = self.objects_count
-
-        debug(f"Object ID: {object_id}")
-        debug(f"Objects count after: {self.objects_count}")
-
-        self.objects[object_id] = instance
-
-        reply = {"error": "stub"}
-
-        await self.respond_to_command(command_id, {"object_id": object_id})
+      if command_method:
+        await command_method(command_id, data["data"])
       else:
         await self.respond_with_error(command_id, f'No such command {command}')
 
@@ -63,6 +47,41 @@ class WebSocketClient:
     debug(f"Reply: {data_json}")
 
     await self.ws.send(data_json)
+
+  async def command_new_object_with_reference(self, command_id, data):
+    class_name = data["class_name"]
+
+    if class_name == "[]":
+      instance = []
+    else:
+      klass = eval(class_name)
+      instance = klass()
+
+    self.objects_count += 1
+    object_id = self.objects_count
+
+    debug(f"Object ID: {object_id}")
+    debug(f"Objects count after: {self.objects_count}")
+
+    self.objects[object_id] = instance
+
+    await self.respond_to_command(command_id, {"object_id": object_id})
+
+  async def command_call_method_on_reference(self, command_id, data):
+    args = data["args"]
+    method_name = data["method_name"]
+    reference_id = data["reference_id"]
+    object = self.objects[reference_id]
+    method = getattr(object, method_name)
+    response = method(*args)
+
+    await self.respond_to_command(command_id, {"response": response})
+
+  async def command_serialize_reference(self, command_id, data):
+    reference_id = data["reference_id"]
+    object = self.objects[reference_id]
+
+    await self.respond_to_command(command_id, json.dumps(object))
 
 async def handler(ws, path):
   debug("New client connected")
