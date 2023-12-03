@@ -29,8 +29,8 @@ export default class PythonWebSocketRunner {
 
   onProcessExit = () => {
     if (this.pid) {
+      this.close()
       console.log(`onProcessExit: Killing Python process with PID ${this.pid}`)
-      exec(`kill ${this.pid}`)
     } else {
       console.log("onProcessExit: No Python process to kill")
     }
@@ -57,6 +57,12 @@ export default class PythonWebSocketRunner {
         this.waitForPidResolve()
         this.waitForPidResolve = undefined
       }
+    }
+  }
+
+  close() {
+    if (this.pid) {
+      exec(`kill ${this.pid}`)
     }
   }
 }
