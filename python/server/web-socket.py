@@ -1,4 +1,6 @@
 import asyncio
+import collections.abc
+import importlib
 import json
 import os
 import websockets
@@ -28,7 +30,12 @@ class WebSocketClient:
       command_method = getattr(self, f"command_{command}")
 
       if command_method:
-        await command_method(command_id, data["data"])
+        try:
+          await command_method(command_id, data["data"])
+        except Exception as error:
+          await self.respond_with_error(command_id, str(error))
+          raise
+          return
       else:
         await self.respond_with_error(command_id, f'No such command {command}')
 
@@ -57,25 +64,50 @@ class WebSocketClient:
       klass = eval(class_name)
       instance = klass()
 
-    self.objects_count += 1
-    object_id = self.objects_count
-
-    debug(f"Object ID: {object_id}")
-    debug(f"Objects count after: {self.objects_count}")
-
-    self.objects[object_id] = instance
+    object_id = self.spawn_object(instance)
 
     await self.respond_to_command(command_id, {"object_id": object_id})
 
   async def command_call_method_on_reference(self, command_id, data):
-    args = data["args"]
+    args = self.parse_arg(data["args"])
     method_name = data["method_name"]
     reference_id = data["reference_id"]
+    with_string = data["with"]
     object = self.objects[reference_id]
     method = getattr(object, method_name)
-    response = method(*args)
+    result = method(*args)
+
+    if with_string == "reference":
+      object_id = self.spawn_object(result)
+      response = object_id
+    elif with_string == "result":
+      response = result
 
     await self.respond_to_command(command_id, {"response": response})
+
+  async def command_import(self, command_id, data):
+    import_name = data["import_name"]
+    import_result = importlib.import_module(import_name)
+    object_id = self.spawn_object(import_result)
+
+    await self.respond_to_command(command_id, {"object_id": object_id})
+
+  async def command_read_attribute(self, command_id, data):
+    attribute_name = data["attribute_name"]
+    reference_id = data["reference_id"]
+    with_string = data["with"]
+    object = self.objects[reference_id]
+
+    result = getattr(object, attribute_name)
+
+    if with_string == "reference":
+      object_id = self.spawn_object(result)
+      response = object_id
+    elif with_string == "result":
+      response = result
+
+    await self.respond_to_command(command_id, {"response": response})
+
 
   async def command_serialize_reference(self, command_id, data):
     reference_id = data["reference_id"]
@@ -83,9 +115,35 @@ class WebSocketClient:
 
     await self.respond_to_command(command_id, json.dumps(object))
 
-async def handler(ws, path):
-  debug("New client connected")
+  def parse_arg(self, arg):
+    if type(arg).__name__ in ("list", "tuple"):
+      new_array = []
 
+      for x in arg:
+        new_array.append(self.parse_arg(x))
+
+      return new_array
+    elif isinstance(arg, dict):
+      if arg["__scoundrel_type"] == "reference":
+        return self.objects[arg["__scoundrel_object_id"]]
+
+      new_dict = {}
+
+      for k, v in arg.items():
+        new_dict[k] = self.parse_arg(v)
+
+      return new_dict
+
+    return arg
+
+  def spawn_object(self, object):
+    self.objects_count += 1
+    object_id = self.objects_count
+    self.objects[object_id] = object
+
+    return object_id
+
+async def handler(ws, path):
   web_socket_client = WebSocketClient(ws)
   await web_socket_client.listen()
 

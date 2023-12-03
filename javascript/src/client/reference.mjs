@@ -10,6 +10,14 @@ export default class Reference {
     return await this.client.callMethodOnReference(this.id, methodName, ...args)
   }
 
+  async callMethodWithReference(methodName, ...args) {
+    return await this.client.callMethodOnReferenceWithReference(this.id, methodName, ...args)
+  }
+
+  async readAttributeWithReference(attributeName, ...args) {
+    return await this.client.readAttributeOnReferenceWithReference(this.id, attributeName, ...args)
+  }
+
   async serialize() {
     return await this.client.serializeReference(this.id)
   }

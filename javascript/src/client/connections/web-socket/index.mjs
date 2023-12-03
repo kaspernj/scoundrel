@@ -9,10 +9,9 @@ export default class WebSocket {
     this.commandsCount = 0
   }
 
-  waitForOpened = () => new Promise((resolve, reject) => {
-    this.ws.addEventListener("open", resolve)
-    this.ws.addEventListener("error", reject)
-  })
+  async close() {
+    await this.ws.close()
+  }
 
   onSocketError = (event) => {
     console.log("onSocketError", event)
@@ -51,4 +50,9 @@ export default class WebSocket {
       }))
     })
   }
+
+  waitForOpened = () => new Promise((resolve, reject) => {
+    this.ws.addEventListener("open", resolve)
+    this.ws.addEventListener("error", reject)
+  })
 }
