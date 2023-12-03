@@ -4,7 +4,7 @@ import Server from "../src/server/index.mjs"
 import ServerWebSocket from "../src/server/connections/web-socket/index.mjs"
 import {WebSocket, WebSocketServer} from "ws"
 
-describe("scoundrel", () => {
+describe("scoundrel - web-socket - javascript", () => {
   it("creates a server and connects to it with the client", async () => {
     const wss = new WebSocketServer({port: 8080})
     const serverWebSocket = new ServerWebSocket(wss)
