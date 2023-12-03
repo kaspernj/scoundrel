@@ -75,12 +75,7 @@ class WebSocketClient:
     with_string = data["with"]
     object = self.objects[reference_id]
     method = getattr(object, method_name)
-
-    debug(f"Calling {method_name} on {object}")
-
     result = method(*args)
-
-    debug(f"Result was: {result}")
 
     if with_string == "reference":
       object_id = self.spawn_object(result)
@@ -93,14 +88,7 @@ class WebSocketClient:
   async def command_import(self, command_id, data):
     import_name = data["import_name"]
     import_result = importlib.import_module(import_name)
-
-    self.objects_count += 1
-    object_id = self.objects_count
-
-    debug(f"Object ID: {object_id}")
-    debug(f"Objects count after: {self.objects_count}")
-
-    self.objects[object_id] = import_result
+    object_id = self.spawn_object(import_result)
 
     await self.respond_to_command(command_id, {"object_id": object_id})
 
@@ -111,8 +99,6 @@ class WebSocketClient:
     object = self.objects[reference_id]
 
     result = getattr(object, attribute_name)
-
-    debug(f"Read attribute result: {result}")
 
     if with_string == "reference":
       object_id = self.spawn_object(result)
@@ -130,8 +116,6 @@ class WebSocketClient:
     await self.respond_to_command(command_id, json.dumps(object))
 
   def parse_arg(self, arg):
-    debug(f"parse_arg: {arg}")
-
     if type(arg).__name__ in ("list", "tuple"):
       new_array = []
 
@@ -155,17 +139,11 @@ class WebSocketClient:
   def spawn_object(self, object):
     self.objects_count += 1
     object_id = self.objects_count
-
-    debug(f"Object ID: {object_id}")
-    debug(f"Objects count after: {self.objects_count}")
-
     self.objects[object_id] = object
 
     return object_id
 
 async def handler(ws, path):
-  debug("New client connected")
-
   web_socket_client = WebSocketClient(ws)
   await web_socket_client.listen()
 
