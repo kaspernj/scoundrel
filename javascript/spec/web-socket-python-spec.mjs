@@ -22,7 +22,7 @@ describe("scoundrel - web-socket - python", () => {
     await clientWebSocket.waitForOpened()
 
     const client = new Client(clientWebSocket)
-    const stringObject = await client.newObjectWithReference("Array")
+    const stringObject = await client.newObjectWithReference("[]")
 
     await stringObject.callMethod("push", "test1")
     await stringObject.callMethod("push", "test2")
