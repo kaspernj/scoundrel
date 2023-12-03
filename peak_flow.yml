@@ -1,5 +1,5 @@
 rvm: true
-before_install:
+before_script:
   - sudo apt-get update && sudo apt-get install -y python3-websockets
 builds:
   build_1:

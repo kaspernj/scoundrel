@@ -14,6 +14,10 @@ export default class ServerClient {
         let object
 
         if (typeof className == "string") {
+          const classInstance = global[className]
+
+          if (!classInstance) throw new Error(`No such class: ${className}`)
+
           object = new global[className](...data.args)
         } else {
           throw new Error(`Don't know how to handle class name: ${typeof className}`)

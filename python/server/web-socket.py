@@ -89,7 +89,7 @@ async def handler(ws, path):
   web_socket_client = WebSocketClient(ws)
   await web_socket_client.listen()
 
-start_server = websockets.serve(handler, "127.0.0.1", 8080)
+start_server = websockets.serve(handler, "127.0.0.1", 8081)
 
 debug(f'Started with PID {os.getpid()}')
 

@@ -9,7 +9,7 @@ describe("scoundrel - web-socket - python", () => {
 
     await pythonWebSocketRunner.runAndWaitForPid()
 
-    const ws = new WebSocket("http://localhost:8080")
+    const ws = new WebSocket("http://localhost:8081")
     const clientWebSocket = new ClientWebSocket(ws)
 
     await clientWebSocket.waitForOpened()
