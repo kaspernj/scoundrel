@@ -35,7 +35,7 @@ describe("scoundrel - web-socket - python", () => {
     expect(result).toEqual(["test1", "test2"])
   })
 
-  fit("imports classes and uses them", async () => {
+  it("imports classes and uses them", async () => {
     const math = await shared.client.import("math")
     const pi = await math.readAttributeWithReference("pi")
     const cosOfPi = await math.callMethodWithReference("cos", pi)
