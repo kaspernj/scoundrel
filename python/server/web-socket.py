@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+
+import argparse
 import asyncio
 import collections.abc
 import importlib
@@ -147,9 +150,19 @@ async def handler(ws, path):
   web_socket_client = WebSocketClient(ws)
   await web_socket_client.listen()
 
-start_server = websockets.serve(handler, "127.0.0.1", 8081)
+parser = argparse.ArgumentParser(
+  prog="Scoundrel Python Server",
+  description="Handles Python code dynamically",
+  epilog="Have fun :-)"
+)
+parser.add_argument("--host", default="127.0.0.1")
+parser.add_argument("--port", default="8081")
 
-debug(f'Started with PID {os.getpid()}')
+args = parser.parse_args()
+
+start_server = websockets.serve(handler, args.host, args.port)
+
+debug(f'Started with PID {os.getpid()} on {args.host}:{args.port}')
 
 asyncio.get_event_loop().run_until_complete(start_server)
 asyncio.get_event_loop().run_forever()
