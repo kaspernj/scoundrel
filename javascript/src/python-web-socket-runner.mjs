@@ -35,7 +35,7 @@ export default class PythonWebSocketRunner {
   onChildStdout = (data) => {
     console.log(`stdout: ${data}`)
 
-    const match = (`${data}`).match(/^Started with PID (\d+)\n$/)
+    const match = (`${data}`).match(/^Started with PID (\d+) on (.+):(.+)\n$/)
 
     if (match) {
       this.pid = match[1]
