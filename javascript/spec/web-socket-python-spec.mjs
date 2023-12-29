@@ -24,7 +24,7 @@ describe("scoundrel - web-socket - python", () => {
     shared.pythonWebSocketRunner?.close()
   })
 
-  fit("creates a server and connects to it with the client", async () => {
+  it("creates a server and connects to it with the client", async () => {
     const stringObject = await shared.client.newObjectWithReference("[]")
 
     await stringObject.callMethod("append", "test1")
