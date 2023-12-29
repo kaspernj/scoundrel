@@ -11,7 +11,7 @@ describe("scoundrel - web-socket - python", () => {
 
     await shared.pythonWebSocketRunner.runAndWaitForPid()
 
-    const ws = new WebSocket("ws://localhost:8081")
+    const ws = new WebSocket("ws://localhost:53874")
     const clientWebSocket = new ClientWebSocket(ws)
 
     await clientWebSocket.waitForOpened()
