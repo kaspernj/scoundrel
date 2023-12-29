@@ -159,10 +159,11 @@ parser.add_argument("--host", default="127.0.0.1")
 parser.add_argument("--port", default="8081")
 
 args = parser.parse_args()
+port = int(args.port)
 
-start_server = websockets.serve(handler, args.host, args.port)
+start_server = websockets.serve(handler, args.host, port)
 
-debug(f'Started with PID {os.getpid()} on {args.host}:{args.port}')
+debug(f'Started with PID {os.getpid()} on {args.host}:{port}')
 
 asyncio.get_event_loop().run_until_complete(start_server)
 asyncio.get_event_loop().run_forever()

@@ -1,3 +1,7 @@
+import Logger from "../../../logger.mjs"
+
+const logger = new Logger("Scoundrel WebSocket")
+
 export default class WebSocket {
   constructor(ws) {
     this.ws = ws
@@ -14,7 +18,7 @@ export default class WebSocket {
   }
 
   onSocketError = (event) => {
-    console.log("onSocketError", event)
+    logger.error(() => ["onSocketError", event])
   }
 
   onSocketMessage = (event) => {
@@ -35,7 +39,7 @@ export default class WebSocket {
   }
 
   onSocketOpen = (event) => {
-    // console.log("onSocketOpen")
+    logger.log(() =>"onSocketOpen")
   }
 
   send(data) {

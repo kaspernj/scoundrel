@@ -1,5 +1,8 @@
 import {exec, spawn} from "child_process"
+import Logger from "./logger.mjs"
 import {realpath} from "node:fs/promises"
+
+const logger = new Logger("Scoundrel PythonWebSocketRunner")
 
 export default class PythonWebSocketRunner {
   constructor() {
@@ -24,21 +27,23 @@ export default class PythonWebSocketRunner {
   onProcessExit = () => {
     if (this.pid) {
       this.close()
-      console.log(`onProcessExit: Killing Python process with PID ${this.pid}`)
+      logger.log(() => `onProcessExit: Killing Python process with PID ${this.pid}`)
     }
   }
 
   onChildStderr = (data) => {
-    console.log(`stderr: ${data}`)
+    logger.log(() => `stderr: ${data}`)
   }
 
   onChildStdout = (data) => {
-    console.log(`stdout: ${data}`)
+    logger.log(() => `stdout: ${data}`)
 
     const match = (`${data}`).match(/^Started with PID (\d+) on (.+):(.+)\n$/)
 
     if (match) {
       this.pid = match[1]
+
+      logger.log(() => `Registered PID ${this.pid}`)
 
       if (this.waitForPidResolve) {
         this.waitForPidResolve()
