@@ -1,4 +1,4 @@
-class Logger {
+export default class Logger {
   constructor(scopeName) {
     this.debug = false
     this.scopeName = scopeName
@@ -26,5 +26,3 @@ class Logger {
     }
   }
 }
-
-export default Logger
