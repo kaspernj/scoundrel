@@ -24,6 +24,9 @@ class WebSocketClient:
 
     while self.running:
       raw_data = await self.ws.recv()
+
+      debug(f"Raw data received: {raw_data}")
+
       data = json.loads(raw_data)
       command = data["data"]["command"]
       command_id = data["command_id"]
