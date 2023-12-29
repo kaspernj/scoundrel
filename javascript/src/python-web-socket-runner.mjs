@@ -40,6 +40,8 @@ export default class PythonWebSocketRunner {
     if (match) {
       this.pid = match[1]
 
+      console.log(`Registered PID ${this.pid}`)
+
       if (this.waitForPidResolve) {
         this.waitForPidResolve()
         this.waitForPidResolve = undefined

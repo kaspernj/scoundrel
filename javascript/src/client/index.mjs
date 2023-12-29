@@ -49,6 +49,9 @@ export default class Client {
       command: "import",
       import_name: importName
     })
+
+    console.log("import", {result})
+
     const id = result.object_id
 
     return this.spawnReference(id)
