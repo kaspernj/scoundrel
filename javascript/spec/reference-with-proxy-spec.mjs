@@ -1,12 +1,13 @@
 import Client from "../src/client/index.mjs"
 import ClientWebSocket from "../src/client/connections/web-socket/index.mjs"
+import referenceWithProxy from "../src/client/reference-proxy.mjs"
 import Server from "../src/server/index.mjs"
 import ServerWebSocket from "../src/server/connections/web-socket/index.mjs"
 import {WebSocket, WebSocketServer} from "ws"
 
 const shared = {}
 
-describe("scoundrel - web-socket - javascript", () => {
+describe("referenceWithProxy", () => {
   beforeEach(async () => {
     shared.wss = new WebSocketServer({port: 8080})
     shared.serverWebSocket = new ServerWebSocket(shared.wss)
@@ -25,13 +26,14 @@ describe("scoundrel - web-socket - javascript", () => {
     await shared.server.close()
   })
 
-  it("creates a server and connects to it with the client", async () => {
-    const stringObject = await shared.client.newObjectWithReference("Array")
+  it("creates a reference with a proxy", async () => {
+    const stringObjectReference = await shared.client.newObjectWithReference("Array")
+    const stringObject = referenceWithProxy(stringObjectReference)
 
-    await stringObject.callMethod("push", "test1")
-    await stringObject.callMethod("push", "test2")
+    await stringObject.push("test1")
+    await stringObject.push("test2")
 
-    const result = await stringObject.serialize()
+    const result = await stringObject.__serialize()
 
     expect(result).toEqual(["test1", "test2"])
   })

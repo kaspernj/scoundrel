@@ -7,6 +7,8 @@ export default class ScoundrelServer {
     this.clients = []
   }
 
+  close = () => this.backend.close()
+
   onNewClient = (clientBackend) => {
     const client = new Client(clientBackend)
 
