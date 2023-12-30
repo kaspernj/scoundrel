@@ -3,6 +3,8 @@ import Reference from "./reference.mjs"
 
 const logger = new Logger("Scoundrel Client")
 
+// logger.setDebug(true)
+
 export default class Client {
   constructor(backend) {
     this.backend = backend

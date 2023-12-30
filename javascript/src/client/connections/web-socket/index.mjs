@@ -2,6 +2,8 @@ import Logger from "../../../logger.mjs"
 
 const logger = new Logger("Scoundrel WebSocket")
 
+// logger.setDebug(true)
+
 export default class WebSocket {
   constructor(ws) {
     this.ws = ws
@@ -32,7 +34,7 @@ export default class WebSocket {
     delete this.commands[commandId]
 
     if (data.error) {
-      command.reject(data.error)
+      command.reject(new Error(data.error))
     } else {
       command.resolve(data.data)
     }
@@ -45,13 +47,16 @@ export default class WebSocket {
   send(data) {
     return new Promise((resolve, reject) => {
       const commandCount = ++this.commandsCount
+      const sendData = JSON.stringify({
+        command_id: commandCount,
+        data
+      })
 
       this.commands[commandCount] = {resolve, reject}
 
-      this.ws.send(JSON.stringify({
-        command_id: commandCount,
-        data
-      }))
+      logger.log(() => ["Sending", sendData])
+
+      this.ws.send(sendData)
     })
   }
 
