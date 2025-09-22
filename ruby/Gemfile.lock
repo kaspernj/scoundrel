@@ -39,10 +39,8 @@ GEM
     string-cases (0.0.4)
     stringio (3.1.0)
     tsafe (0.0.12)
-    weakling (0.0.3)
-    wref (0.0.9)
+    wref (0.0.11)
       ref
-      weakling
 
 PLATFORMS
   x86_64-linux
