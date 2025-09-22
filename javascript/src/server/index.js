@@ -1,4 +1,4 @@
-import Client from "./client/index.mjs"
+import Client from "./client/index.js"
 
 export default class ScoundrelServer {
   constructor(backend) {

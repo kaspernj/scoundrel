@@ -1,4 +1,4 @@
-import WebSocketClient from "./client.mjs"
+import WebSocketClient from "./client.js"
 
 export default class WebSocket {
   constructor(webSocketServer) {

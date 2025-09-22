@@ -1,4 +1,4 @@
-import Reference from "./reference.mjs"
+import Reference from "./reference.js"
 
 export default class Client {
   constructor(backend) {
