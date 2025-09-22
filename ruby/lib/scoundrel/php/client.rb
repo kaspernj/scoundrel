@@ -1,6 +1,6 @@
 require "wref" unless Kernel.const_defined?(:Wref)
 require "tsafe" unless Kernel.const_defined?(:Tsafe)
-require "php-serialize4ruby"
+require "php-serialize"
 require "base64"
 require "open3"
 require "thread"
@@ -256,6 +256,7 @@ private
 
   def php_cmd_as_string
     bin_path_tries = [
+      "/usr/bin/php8.4",
       "/usr/bin/php5",
       "/usr/bin/php"
     ]
@@ -272,7 +273,7 @@ private
       end
 
       if cmd_str.empty? && File.exist?("/usr/bin/env")
-        cmd_str = "/usr/bin/env php5"
+        cmd_str = "/usr/bin/env php"
       end
     end
 

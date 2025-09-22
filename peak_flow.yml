@@ -1,6 +1,6 @@
 rvm: true
 before_script:
-  - sudo apt-get update && sudo apt-get install -y python3-websockets
+  - sudo apt-get update && sudo apt-get install -y php-cli python3-websockets
 environment:
   RUBY_VERSION: 3.2.9
 builds:

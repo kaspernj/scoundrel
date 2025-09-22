@@ -21,10 +21,12 @@ Gem::Specification.new do |s|
 
   s.add_dependency "base64"
   s.add_dependency "bundler"
-  s.add_dependency "php-serialize4ruby", "1.4.1"
+  s.add_dependency "php-serialize"
   s.add_dependency "string-cases"
   s.add_dependency "rspec"
   s.add_dependency "rdoc"
   s.add_dependency "tsafe"
   s.add_dependency "wref"
+
+  s.add_development_dependency "rexml"
 end
