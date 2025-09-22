@@ -345,7 +345,7 @@ private
     proxy_id = @proxy_objs_ids[id]
 
     if proxy_id
-      @proxy_objs_unsets << proxy_id
+      @proxy_objs_unsets.push(proxy_id)
       debug "Done finalizing #{id}\n" if @debug
     else
       debug "No such ID in proxy objects IDs hash: '#{id}'.\n" if @debug
