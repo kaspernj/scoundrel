@@ -1,5 +1,5 @@
 {
-  "name": "scoundrel",
+  "name": "scoundrel-remote-eval",
   "type": "module",
   "version": "1.0.0",
   "description": "",
@@ -14,7 +14,7 @@
   "keywords": [
     "scoundrel"
   ],
-  "author": "k@spernj.org",
+  "author": "kasper@diestoeckels.de",
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/kaspernj/scoundrel/issues"
