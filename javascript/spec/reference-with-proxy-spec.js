@@ -1,8 +1,8 @@
-import Client from "../src/client/index.mjs"
-import ClientWebSocket from "../src/client/connections/web-socket/index.mjs"
-import referenceWithProxy from "../src/client/reference-proxy.mjs"
-import Server from "../src/server/index.mjs"
-import ServerWebSocket from "../src/server/connections/web-socket/index.mjs"
+import Client from "../src/client/index.js"
+import ClientWebSocket from "../src/client/connections/web-socket/index.js"
+import referenceWithProxy from "../src/client/reference-proxy.js"
+import Server from "../src/server/index.js"
+import ServerWebSocket from "../src/server/connections/web-socket/index.js"
 import {WebSocket, WebSocketServer} from "ws"
 
 const shared = {}

@@ -18,7 +18,7 @@ describe "RubyProcess" do
       end
 
       answers = sp.instance_variable_get(:@answers)
-      answers.should be_empty
+      expect(answers).to be_empty
     end
   end
 end

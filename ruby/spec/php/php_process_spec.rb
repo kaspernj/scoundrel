@@ -136,6 +136,8 @@ describe "Scoundrel::Php::Client" do
     Scoundrel::Php::Client.new do |php|
       php.eval("
         class TestClass{
+          public $test;
+
           function __construct($test){
             $this->test = $test;
           }

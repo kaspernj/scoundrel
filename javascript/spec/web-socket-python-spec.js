@@ -1,6 +1,6 @@
-import Client from "../src/client/index.mjs"
-import ClientWebSocket from "../src/client/connections/web-socket/index.mjs"
-import PythonWebSocketRunner from "../src/python-web-socket-runner.mjs"
+import Client from "../src/client/index.js"
+import ClientWebSocket from "../src/client/connections/web-socket/index.js"
+import PythonWebSocketRunner from "../src/python-web-socket-runner.js"
 import {WebSocket} from "ws"
 
 const shared = {}

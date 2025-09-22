@@ -11,16 +11,16 @@ describe "RubyProcess" do
           1.upto(250) do
             str = sp.new(:String, "Kasper Johansen")
 
-            str.__rp_marshal.should eq "Kasper Johansen"
+            expect(str.__rp_marshal).to eq "Kasper Johansen"
             str << " More"
 
-            str.__rp_marshal.should include "Johansen"
+            expect(str.__rp_marshal).to include "Johansen"
             str << " Even more"
 
-            str.__rp_marshal.should_not include "Christina"
+            expect(str.__rp_marshal).not_to include "Christina"
             str << " Much more"
 
-            str.__rp_marshal.should eq "Kasper Johansen More Even more Much more"
+            expect(str.__rp_marshal).to eq "Kasper Johansen More Even more Much more"
           end
         end
       end

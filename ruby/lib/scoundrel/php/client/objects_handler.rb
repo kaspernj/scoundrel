@@ -16,10 +16,10 @@ class Scoundrel::Php::Client::ObjectsHandler
     obj_count_id = @object_ids[id]
 
     if @object_unset_ids.index(obj_count_id) == nil
-      @object_unset_ids << obj_count_id
+      @object_unset_ids.push(obj_count_id)
     end
 
-    @object_ids.delete(id)
+    @object_ids.tsafe_mrswlock_delete(id)
   end
 
   # This flushes the unset IDs to the PHP-process and frees memory.

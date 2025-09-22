@@ -354,7 +354,7 @@ class php_process{
   }
 
   //Makes errors being thrown as exceptions instead.
-  function error_handler($error_number, $error_message, $file_name, $line_number, $vars, $args = null){
+  function error_handler($error_number, $error_message, $file_name, $line_number, $vars = null, $args = null){
     if ($error_number == E_STRICT || $error_number == E_NOTICE || $error_number == E_WARNING){
       $this->send(array(
         "type" => "php_error",

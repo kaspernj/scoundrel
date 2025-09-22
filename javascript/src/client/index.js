@@ -1,5 +1,5 @@
-import Logger from "../logger.mjs"
-import Reference from "./reference.mjs"
+import Logger from "../logger.js"
+import Reference from "./reference.js"
 
 const logger = new Logger("Scoundrel Client")
 

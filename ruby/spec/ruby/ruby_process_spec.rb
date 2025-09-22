@@ -13,7 +13,7 @@ describe "RubyProcess" do
     proxyarr << 3
     proxyarr << 5
 
-    proxyarr.__rp_marshal.should eq [1, 3, 5]
+    expect(proxyarr.__rp_marshal).to eq [1, 3, 5]
   end
 
   it "should be able to pass proxy-objects as arguments." do
@@ -22,13 +22,13 @@ describe "RubyProcess" do
     write_called = false
 
     rp.static(:File, :open, str, "w") do |fp|
-      thread_id.should eq Thread.current.__id__
+      expect(thread_id).to eq Thread.current.__id__
       fp.write("Test!")
       write_called = true
     end
 
-    write_called.should eq true
-    File.read(str.__rp_marshal).should eq "Test!"
+    expect(write_called).to eq true
+    expect(File.read(str.__rp_marshal)).to eq "Test!"
   end
 
   it "should be able to write files" do
@@ -37,7 +37,7 @@ describe "RubyProcess" do
     fp.write("Test!")
     fp.close
 
-    File.read(fpath).should eq "Test!"
+    expect(File.read(fpath)).to eq "Test!"
   end
 
   it "should do garbage collection" do
@@ -46,8 +46,8 @@ describe "RubyProcess" do
 
   it "should be able to do static calls" do
     pid = rp.static(:Process, :pid).__rp_marshal
-    rp.finalize_count.should be <= 0 unless RUBY_ENGINE == "jruby"
-    raise "Not a number" if !pid.is_a?(Fixnum) && !pid.is_a?(Integer)
+    expect(rp.finalize_count).to be <= 0 unless RUBY_ENGINE == "jruby"
+    raise "Not a number" if !pid.is_a?(Integer)
   end
 
   it "should be able to handle blocking blocks" do
@@ -59,8 +59,8 @@ describe "RubyProcess" do
       fp.write("Test!!!")
     end
 
-    run_count.should > 0
-    File.read(fpath).should eq "Test!!!"
+    expect(run_count).to be > 0
+    expect(File.read(fpath)).to eq "Test!!!"
   end
 
   it "should be able to do slow block-results in JRuby." do
@@ -79,13 +79,13 @@ describe "RubyProcess" do
 
     require "timeout"
     Timeout.timeout(10) do
-      expect = 8
+      expected_value = 8
       rp.static("Kaspertest", "kaspertest") do |count|
-        expect.should eq count.__rp_marshal
-        expect += 1
+        expect(expected_value).to eq count.__rp_marshal
+        expected_value += 1
       end
 
-      expect.should eq 13
+      expect(expected_value).to eq 13
     end
   end
 
@@ -93,25 +93,25 @@ describe "RubyProcess" do
     #Try to define an integer and run upto with a block.
     proxy_int = rp.numeric(5)
 
-    expect = 5
+    expected_value = 5
     proxy_int.upto(250) do |i|
-      i.__rp_marshal.should eq expect
-      expect += 1
+      expect(i.__rp_marshal).to eq expected_value
+      expected_value += 1
     end
 
     #Ensure the expected has actually been increased by running the block.
-    expect.should eq 251
+    expect(expected_value).to eq 251
   end
 
   it "should handle stressed operations" do
     #Spawn a test-object - a string - with a variable-name.
     proxy_obj = rp.new(:String, "Kasper")
-    proxy_obj.__rp_marshal.should eq "Kasper"
+    expect(proxy_obj.__rp_marshal).to eq "Kasper"
 
     #Stress it a little by doing 500 calls.
     0.upto(500) do
       res = proxy_obj.slice(0, 3).__rp_marshal
-      res.should eq "Kas"
+      expect(res).to eq "Kas"
     end
   end
 
@@ -125,7 +125,7 @@ describe "RubyProcess" do
         begin
           0.upto(250) do |num_i|
             res = proxy_obj.slice(0, thread_i).__rp_marshal
-            res.should eq should_return
+            expect(res).to eq should_return
           end
         rescue => e
           Thread.current[:error] = e
@@ -143,7 +143,7 @@ describe "RubyProcess" do
 
   it "should be able to do evals" do
     res = rp.str_eval("return 10").__rp_marshal
-    res.should eq 10
+    expect(res).to eq 10
   end
 
   it "should clean itself" do
@@ -161,14 +161,14 @@ describe "RubyProcess" do
     rp.flush_finalized
 
     answers = rp.instance_variable_get(:@answers)
-    answers.should be_empty
+    expect(answers).to be_empty
 
     objects = rp.instance_variable_get(:@objects)
-    objects.should be_empty
+    expect(objects).to be_empty
   end
 
   it "should be able to destroy itself" do
     rp.destroy
-    rp.destroyed?.should eq true
+    expect(rp.destroyed?).to eq true
   end
 end

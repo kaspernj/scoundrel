@@ -1,4 +1,4 @@
-import Logger from "../../../logger.mjs"
+import Logger from "../../../logger.js"
 
 const logger = new Logger("Scoundrel WebSocket")
 

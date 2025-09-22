@@ -1,5 +1,5 @@
 import {exec, spawn} from "child_process"
-import Logger from "./logger.mjs"
+import Logger from "./logger.js"
 import {realpath} from "node:fs/promises"
 
 const logger = new Logger("Scoundrel PythonWebSocketRunner")
