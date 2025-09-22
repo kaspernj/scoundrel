@@ -1,11 +1,10 @@
 import Logger from "../../../logger.js"
 
-const logger = new Logger("Scoundrel WebSocket")
-
-// logger.setDebug(true)
-
 export default class WebSocket {
   constructor(ws) {
+    this.logger = new Logger("Scoundrel WebSocket")
+    // this.logger.setDebug(true)
+
     this.ws = ws
     this.ws.addEventListener("error", this.onSocketError)
     this.ws.addEventListener("open", this.onSocketOpen)
@@ -20,7 +19,7 @@ export default class WebSocket {
   }
 
   onSocketError = (event) => {
-    logger.error(() => ["onSocketError", event])
+    this.logger.error(() => ["onSocketError", event])
   }
 
   onSocketMessage = (event) => {
@@ -41,7 +40,7 @@ export default class WebSocket {
   }
 
   onSocketOpen = (event) => {
-    logger.log(() =>"onSocketOpen")
+    this.logger.log(() =>"onSocketOpen")
   }
 
   send(data) {
@@ -53,9 +52,7 @@ export default class WebSocket {
       })
 
       this.commands[commandCount] = {resolve, reject}
-
-      logger.log(() => ["Sending", sendData])
-
+      this.logger.log(() => ["Sending", sendData])
       this.ws.send(sendData)
     })
   }
