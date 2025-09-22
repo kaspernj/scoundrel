@@ -2,7 +2,7 @@ rvm: true
 before_script:
   - sudo apt-get update && sudo apt-get install -y python3-websockets
 environment:
-  RUBY_VERSION: 3.3.9
+  RUBY_VERSION: 3.2.9
 builds:
   build_1:
     name: Ruby
