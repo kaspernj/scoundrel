@@ -5,12 +5,12 @@ updates:
   schedule:
     interval: daily
     time: "01:00"
-    timezone: Europe/Copenhagen
+    timezone: Europe/Berlin
   open-pull-requests-limit: 99
 - package-ecosystem: bundler
   directory: "/ruby"
   schedule:
     interval: daily
     time: "01:00"
-    timezone: Europe/Copenhagen
+    timezone: Europe/Berlin
   open-pull-requests-limit: 99

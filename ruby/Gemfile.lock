@@ -14,7 +14,7 @@ GEM
   remote: http://rubygems.org/
   specs:
     diff-lcs (1.5.1)
-    php-serialize4ruby (0.0.0)
+    php-serialize4ruby (1.4.1)
     psych (5.1.1.1)
       stringio
     rdoc (6.6.2)
