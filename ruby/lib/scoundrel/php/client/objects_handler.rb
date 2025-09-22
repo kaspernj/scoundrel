@@ -13,13 +13,13 @@ class Scoundrel::Php::Client::ObjectsHandler
 
   # This object controls which IDs should be unset on the PHP-side by being a destructor on the Ruby-side.
   def objects_unsetter(id)
-    obj_count_id = @object_ids[id]
+    obj_count_id = @object_ids.__send__("tsafe_mrswlock_[]", id)
 
-    if @object_unset_ids.index(obj_count_id) == nil
-      @object_unset_ids << obj_count_id
+    if @object_unset_ids.tsafe_mrswlock_index(obj_count_id) == nil
+      @object_unset_ids.tsafe_mrswlock_push(obj_count_id)
     end
 
-    @object_ids.delete(id)
+    @object_ids.tsafe_mrswlock_delete(id)
   end
 
   # This flushes the unset IDs to the PHP-process and frees memory.
