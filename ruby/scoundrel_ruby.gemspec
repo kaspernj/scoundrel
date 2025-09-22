@@ -19,6 +19,7 @@ Gem::Specification.new do |s|
 
   s.specification_version = 4
 
+  s.add_dependency "base64"
   s.add_dependency "bundler"
   s.add_dependency "php-serialize4ruby"
   s.add_dependency "string-cases"
