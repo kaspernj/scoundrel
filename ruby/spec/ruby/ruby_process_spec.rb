@@ -47,7 +47,7 @@ describe "RubyProcess" do
   it "should be able to do static calls" do
     pid = rp.static(:Process, :pid).__rp_marshal
     rp.finalize_count.should be <= 0 unless RUBY_ENGINE == "jruby"
-    raise "Not a number" if !pid.is_a?(Fixnum) && !pid.is_a?(Integer)
+    raise "Not a number" if !pid.is_a?(Integer)
   end
 
   it "should be able to handle blocking blocks" do

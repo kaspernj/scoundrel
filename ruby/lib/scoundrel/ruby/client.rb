@@ -43,7 +43,7 @@ class Scoundrel::Ruby::Client
     @pid = @args[:pid]
 
     #These classes are allowed in call-arguments. They can be marshalled without any errors.
-    @args_allowed = [FalseClass, Fixnum, Integer, NilClass, String, Symbol, TrueClass]
+    @args_allowed = [FalseClass, Integer, NilClass, String, Symbol, TrueClass]
 
     #Set IO variables if given.
     @io_out = Tsafe::Proxy.new(obj: @args[:out]) if @args[:out]
@@ -118,7 +118,7 @@ class Scoundrel::Ruby::Client
     #Start by getting the PID of the process.
     begin
       @pid = self.static(:Process, :pid).__rp_marshal
-      raise "Unexpected PID: '#{@pid}'." if !@pid.is_a?(Fixnum) && !@pid.is_a?(Integer)
+      raise "Unexpected PID: '#{@pid}'." if !@pid.is_a?(Integer)
     rescue => e
       self.destroy
       raise e
