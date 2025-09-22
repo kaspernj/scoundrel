@@ -9,7 +9,7 @@ describe "Scoundrel::Ruby::ClassProxy" do
         1.upto(10) do
           Scoundrel::Ruby::ClassProxy.run do
             str = Scoundrel::Ruby::ClassProxy.subproc.new(:String, "Wee")
-            str.__rp_marshal.should eq "Wee"
+            expect(str.__rp_marshal).to eq "Wee"
           end
         end
       end
@@ -33,8 +33,8 @@ describe "Scoundrel::Ruby::ClassProxy" do
       strio = StringIO.new
       doc.write(strio)
 
-      Kernel.const_defined?(:REXML).should eq false
-      strio.string.should eq "<test/>"
+      expect(Kernel.const_defined?(:REXML)).to be false
+      expect(strio.string).to eq "<test/>"
     end
   end
 

@@ -69,7 +69,7 @@ php.func("ImageJPEG", image, "new_file.jpeg", 85)
 ## Setting variables on objects.
 ```ruby
 instance.__set_var(:varName, "varValue")
-instance.__get_var(:varName).should eq "varValue"
+expect(instance.__get_var(:varName)).to eq "varValue"
 ```
 
 ## Getting constants.
