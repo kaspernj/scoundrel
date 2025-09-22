@@ -8,7 +8,15 @@ export default class Logger {
     this.debug = newValue
   }
 
+  error(...args) {
+    return this._sendToConsole("error", ...args)
+  }
+
   log(...args) {
+    return this._sendToConsole("log", ...args)
+  }
+
+  _sendToConsole(logType, ...args) {
     if (!this.debug) {
       return
     }
@@ -17,12 +25,12 @@ export default class Logger {
       const callbackArgs = args[0]()
 
       if (Array.isArray(callbackArgs)) {
-        console.log(this.scopeName, ...callbackArgs)
+        console[logType](this.scopeName, ...callbackArgs)
       } else {
-        console.log(this.scopeName, callbackArgs)
+        console[logType](this.scopeName, callbackArgs)
       }
     } else {
-      console.log(this.scopeName, ...args)
+      console[logType](this.scopeName, ...args)
     }
   }
 }
