@@ -1,8 +1,13 @@
+#!/usr/bin/env python3
+
+import argparse
 import asyncio
 import collections.abc
 import importlib
 import json
 import os
+import threading
+
 import websockets
 
 def debug(message):
@@ -20,7 +25,11 @@ class WebSocketClient:
     debug("Starting running loop")
 
     while self.running:
+      debug("Waiting for new input")
       raw_data = await self.ws.recv()
+
+      debug(f"Raw data received: {raw_data}")
+
       data = json.loads(raw_data)
       command = data["data"]["command"]
       command_id = data["command_id"]
@@ -30,14 +39,28 @@ class WebSocketClient:
       command_method = getattr(self, f"command_{command}")
 
       if command_method:
-        try:
-          await command_method(command_id, data["data"])
-        except Exception as error:
-          await self.respond_with_error(command_id, str(error))
-          raise
-          return
+        thread = threading.Thread(target=self.run_command_in_thread, args=(command_method, command_id, data))
+        thread.start()
+
+        # self.run_command(command_id, data)
       else:
-        await self.respond_with_error(command_id, f'No such command {command}')
+        self.respond_with_error(command_id, f'No such command {command}')
+
+  def run_command_in_thread(self, command_method, command_id, data):
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+
+    loop.run_until_complete(self.run_command(command_method, command_id, data))
+    loop.close()
+
+  async def run_command(self, command_method, command_id, data):
+    try:
+      await command_method(command_id, data["data"])
+    except Exception as error:
+      debug(f"ERROR: {error}")
+      await self.respond_with_error(command_id, str(error))
+      raise
+      return
 
   async def respond_to_command(self, command_id, data):
     data = {"type": "command_response", "command_id": command_id, "data": data}
@@ -147,9 +170,20 @@ async def handler(ws, path):
   web_socket_client = WebSocketClient(ws)
   await web_socket_client.listen()
 
-start_server = websockets.serve(handler, "127.0.0.1", 8081)
+parser = argparse.ArgumentParser(
+  prog="Scoundrel Python Server",
+  description="Handles Python code dynamically",
+  epilog="Have fun :-)"
+)
+parser.add_argument("--host", default="127.0.0.1")
+parser.add_argument("--port", default="53874")
 
-debug(f'Started with PID {os.getpid()}')
+args = parser.parse_args()
+port = int(args.port)
+
+start_server = websockets.serve(handler, args.host, port)
+
+debug(f'Started with PID {os.getpid()} on {args.host}:{port}')
 
 asyncio.get_event_loop().run_until_complete(start_server)
 asyncio.get_event_loop().run_forever()

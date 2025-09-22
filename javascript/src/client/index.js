@@ -1,4 +1,9 @@
+import Logger from "../logger.js"
 import Reference from "./reference.js"
+
+const logger = new Logger("Scoundrel Client")
+
+// logger.setDebug(true)
 
 export default class Client {
   constructor(backend) {
@@ -49,6 +54,9 @@ export default class Client {
       command: "import",
       import_name: importName
     })
+
+    logger.log(() => ["import", {result}])
+
     const id = result.object_id
 
     return this.spawnReference(id)
