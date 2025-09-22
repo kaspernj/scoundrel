@@ -17,7 +17,7 @@ describe "RubyProcess" do
             expect(str.__rp_marshal).to include "Johansen"
             str << " Even more"
 
-            expect(str.__rp_marshal).not.to include "Christina"
+            expect(str.__rp_marshal).not_to include "Christina"
             str << " Much more"
 
             expect(str.__rp_marshal).to eq "Kasper Johansen More Even more Much more"
