@@ -13,7 +13,7 @@ describe "RubyProcess" do
     proxyarr << 3
     proxyarr << 5
 
-    proxyarr.__rp_marshal.should eq [1, 3, 5]
+    expect(proxyarr.__rp_marshal).to eq [1, 3, 5]
   end
 
   it "should be able to pass proxy-objects as arguments." do
@@ -22,12 +22,12 @@ describe "RubyProcess" do
     write_called = false
 
     rp.static(:File, :open, str, "w") do |fp|
-      thread_id.should eq Thread.current.__id__
+      expect(thread_id).to eq Thread.current.__id__
       fp.write("Test!")
       write_called = true
     end
 
-    write_called.should eq true
+    expect(write_called).to eq true
     File.read(str.__rp_marshal).should eq "Test!"
   end
 
@@ -106,12 +106,12 @@ describe "RubyProcess" do
   it "should handle stressed operations" do
     #Spawn a test-object - a string - with a variable-name.
     proxy_obj = rp.new(:String, "Kasper")
-    proxy_obj.__rp_marshal.should eq "Kasper"
+    expect(proxy_obj.__rp_marshal).to eq "Kasper"
 
     #Stress it a little by doing 500 calls.
     0.upto(500) do
       res = proxy_obj.slice(0, 3).__rp_marshal
-      res.should eq "Kas"
+      expect(res).to eq "Kas"
     end
   end
 

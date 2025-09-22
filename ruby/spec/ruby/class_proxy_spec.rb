@@ -66,16 +66,16 @@ describe "Scoundrel::Ruby::ClassProxy" do
         count_processes += 1
       end
 
-      count_processes.should eq 0
+      expect(count_processes).to eq 0
 
       count_proxy_objs = 0
       ObjectSpace.each_object(Scoundrel::Ruby::ProxyObject) do |obj|
         count_proxy_objs += 1
       end
 
-      count_proxy_objs.should eq 0
+      expect(count_proxy_objs).to eq 0
 
-      Scoundrel::Ruby::ClassProxy.constants.empty?.should eq true
+      expect(Scoundrel::Ruby::ClassProxy.constants.empty?).to be true
     end
   end
 end
