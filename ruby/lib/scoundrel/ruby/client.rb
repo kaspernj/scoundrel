@@ -342,10 +342,10 @@ private
   #Method used for detecting garbage-collected proxy-objects. This way we can also free references to them in the other process, so it doesnt run out of memory.
   def proxyobj_finalizer(id)
     debug "Finalized #{id}\n" if @debug
-    proxy_id = @proxy_objs_ids.__send__("tsafe_mrswlock_fetch", id, nil)
+    proxy_id = @proxy_objs_ids[id]
 
     if proxy_id
-      @proxy_objs_unsets.tsafe_mrswlock_push(proxy_id)
+      @proxy_objs_unsets << proxy_id
       debug "Done finalizing #{id}\n" if @debug
     else
       debug "No such ID in proxy objects IDs hash: '#{id}'.\n" if @debug
