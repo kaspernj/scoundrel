@@ -24,7 +24,7 @@ class Scoundrel::Ruby::Client
   def self.const_missing(name)
     file_path = "#{::File.realpath(__dir__)}/#{::StringCases.camel_to_snake(name)}.rb"
 
-    if File.exists?(file_path)
+    if File.exist?(file_path)
       require file_path
       return const_get(name) if const_defined?(name)
     end

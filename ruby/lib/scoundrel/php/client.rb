@@ -278,7 +278,7 @@ private
 
     server_script_path = File.realpath("#{__dir__}/../../../../php/server/server.php")
 
-    raise "Couldn't find server script: #{server_script_path}" unless File.exists?(server_script_path)
+    raise "Couldn't find server script: #{server_script_path}" unless File.exist?(server_script_path)
 
     cmd_str << " \"#{server_script_path}\""
     cmd_str
