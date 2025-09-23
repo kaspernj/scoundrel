@@ -6,9 +6,10 @@ export default class ScoundrelServer {
     this.backend.onNewClient(this.onNewClient)
     this.clients = []
     this._classes = {}
+    this._objects = {}
   }
 
-  close = () => this.backend.close()
+  close() { this.backend.close() }
 
   onNewClient = (clientBackend) => {
     const client = new Client(clientBackend, this)
@@ -22,7 +23,17 @@ export default class ScoundrelServer {
     this._classes[className] = classInstance
   }
 
+  registerObject(objectName, objectInstance) {
+    if (objectName in this._objects) throw new Error(`Object already exists: ${objectName}`)
+
+    this._objects[objectName] = objectInstance
+  }
+
   getClass(className) {
     return this._classes[className]
+  }
+
+  getObject(objectName) {
+    return this._objects[objectName]
   }
 }
