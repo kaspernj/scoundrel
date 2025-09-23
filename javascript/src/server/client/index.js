@@ -9,9 +9,24 @@ export default class ServerClient {
 
   onCommand = (commandId, data) => {
     try {
-      if (data.command == "new_object_with_reference") {
-        const className = data.class_name
+      if (data.command == "get_object") {
+        const serverObject = this.server.getObject(data.object_name)
+        let object
+
+        if (serverObject) {
+          object = serverObject
+        } else {
+          object = global[data.object_name]
+
+          if (!object) throw new Error(`No such object: ${data.object_name}`)
+        }
+
         const objectId = ++this.objectsCount
+
+        this.objects[objectId] = object
+        this.respondToCommand(commandId, {object_id: objectId})
+      } else if (data.command == "new_object_with_reference") {
+        const className = data.class_name
         let object
 
         if (typeof className == "string") {
@@ -30,8 +45,9 @@ export default class ServerClient {
           throw new Error(`Don't know how to handle class name: ${typeof className}`)
         }
 
-        this.objects[objectId] = object
+        const objectId = ++this.objectsCount
 
+        this.objects[objectId] = object
         this.respondToCommand(commandId, {object_id: objectId})
       } else if (data.command == "call_method_on_reference") {
         const referenceId = data.reference_id
@@ -53,6 +69,24 @@ export default class ServerClient {
         if (!object) throw new Error(`No object by that ID: ${referenceId}`)
 
         this.respondToCommand(commandId, JSON.stringify(object))
+      } else if (data.command == "read_attribute") {
+        const attributeName = data.attribute_name
+        const referenceId = data.reference_id
+        const returnWith = data.with
+        const object = this.objects[referenceId]
+
+        if (!object) throw new Error(`No object by that ID: ${referenceId}`)
+
+        const attribute = object[attributeName]
+
+        if (returnWith == "reference") {
+          const objectId = ++this.objectsCount
+
+          this.objects[objectId] = attribute
+          this.respondToCommand(commandId, {response: objectId})
+        } else {
+          this.respondToCommand(commandId, {response: attribute})
+        }
       } else {
         this.clientBackend.send({type: "command_response", command_id: commandId, error: `Unknown command: ${data.command}`})
       }

@@ -62,6 +62,19 @@ export default class Client {
     return this.spawnReference(id)
   }
 
+  async getObject(objectName) {
+    const result = await this.backend.send({
+      command: "get_object",
+      object_name: objectName
+    })
+
+    if (!result) throw new Error("Blank result given")
+
+    const id = result.object_id
+
+    return this.spawnReference(id)
+  }
+
   async newObjectWithReference(className, ...args) {
     const result = await this.backend.send({
       args: this.parseArg(args),
@@ -76,7 +89,7 @@ export default class Client {
     return this.spawnReference(id)
   }
 
-  isPlainObject = (input) => {
+  isPlainObject(input) {
     if (input && typeof input === "object" && !Array.isArray(input)) {
       return true
     }
@@ -117,6 +130,16 @@ export default class Client {
     const id = result.response
 
     return this.spawnReference(id)
+  }
+
+  async readAttributeOnReference(referenceId, attributeName) {
+    const result = await this.backend.send({
+      command: "read_attribute",
+      attribute_name: attributeName,
+      reference_id: referenceId,
+      with: "result"
+    })
+    return result.response
   }
 
   async serializeReference(referenceId) {
