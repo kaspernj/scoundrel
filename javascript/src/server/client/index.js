@@ -18,7 +18,7 @@ export default class ServerClient {
           const ServerClassInstance = this.server.getClass(className)
 
           if (ServerClassInstance) {
-            object = new ServerClassInstance[className](...data.args)
+            object = new ServerClassInstance(...data.args)
           } else {
             const classInstance = global[className]
 
