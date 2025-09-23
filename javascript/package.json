@@ -1,7 +1,7 @@
 {
-  "name": "scoundrel",
+  "name": "scoundrel-remote-eval",
   "type": "module",
-  "version": "1.0.0",
+  "version": "1.0.3",
   "description": "",
   "main": "src/index.js",
   "scripts": {
@@ -14,7 +14,7 @@
   "keywords": [
     "scoundrel"
   ],
-  "author": "k@spernj.org",
+  "author": "kasper@diestoeckels.de",
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/kaspernj/scoundrel/issues"

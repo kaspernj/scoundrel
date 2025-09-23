@@ -1,9 +1,10 @@
 export default class ServerClient {
-  constructor(clientBackend) {
+  constructor(clientBackend, server) {
     this.clientBackend = clientBackend
     this.clientBackend.onCommand(this.onCommand)
     this.objects = {}
     this.objectsCount = 0
+    this.server = server
   }
 
   onCommand = (commandId, data) => {
@@ -14,11 +15,17 @@ export default class ServerClient {
         let object
 
         if (typeof className == "string") {
-          const classInstance = global[className]
+          const ServerClassInstance = this.server.getClass(className)
 
-          if (!classInstance) throw new Error(`No such class: ${className}`)
+          if (ServerClassInstance) {
+            object = new ServerClassInstance(...data.args)
+          } else {
+            const classInstance = global[className]
 
-          object = new global[className](...data.args)
+            if (!classInstance) throw new Error(`No such class: ${className}`)
+
+            object = new global[className](...data.args)
+          }
         } else {
           throw new Error(`Don't know how to handle class name: ${typeof className}`)
         }
