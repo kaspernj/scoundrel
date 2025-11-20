@@ -16,13 +16,15 @@ export default class Client {
   }
 
   async callMethodOnReference(referenceId, methodName, ...args) {
-    return await this.backend.send({
+    const result = await this.backend.send({
       args: this.parseArg(args),
       command: "call_method_on_reference",
       method_name: methodName,
       reference_id: referenceId,
       with: "result"
     })
+
+    return result.response
   }
 
   async callMethodOnReferenceWithReference(referenceId, methodName, ...args) {

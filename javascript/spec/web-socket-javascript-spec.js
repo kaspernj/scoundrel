@@ -35,4 +35,15 @@ describe("scoundrel - web-socket - javascript", () => {
 
     expect(result).toEqual(["test1", "test2"])
   })
+
+  it("returns results from method calls", async () => {
+    const stringObject = await shared.client.newObjectWithReference("Array")
+
+    await stringObject.callMethod("push", "test1")
+    await stringObject.callMethod("push", "test2")
+
+    const result = await stringObject.callMethod("join", ", ")
+
+    expect(result).toEqual("test1, test2")
+  })
 })
