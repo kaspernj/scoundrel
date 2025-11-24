@@ -111,7 +111,9 @@ export default class Client {
 
   onCommand = (commandId, data) => {
     try {
-      if (data.command == "get_object") {
+      if (!data.command) {
+        throw new Error(`No command key given in data: ${Object.keys(data).join(", ")}`)
+      } else if (data.command == "get_object") {
         const serverObject = this.getObject(data.object_name)
         let object
 
