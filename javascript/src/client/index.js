@@ -25,6 +25,14 @@ export default class Client {
     this.backend.close()
   }
 
+  /**
+   * Calls a method on a reference and returns the result directly
+   *
+   * @param {number} referenceId
+   * @param {string} methodName
+   * @param  {...any} args
+   * @returns {Promise<any>}
+   */
   async callMethodOnReference(referenceId, methodName, ...args) {
     const result = await this.sendCommand("call_method_on_reference", {
       args: this.parseArg(args),
@@ -36,6 +44,14 @@ export default class Client {
     return result.response
   }
 
+  /**
+   * Calls a method on a reference and returns a new reference
+   *
+   * @param {number} referenceId
+   * @param {string} methodName
+   * @param  {...any} args
+   * @returns {Promise<Reference>}
+   */
   async callMethodOnReferenceWithReference(referenceId, methodName, ...args) {
     const result = await this.sendCommand("call_method_on_reference", {
       args: this.parseArg(args),
@@ -48,6 +64,12 @@ export default class Client {
     return this.spawnReference(id)
   }
 
+  /**
+   * Evaluates a string and returns a new reference
+   *
+   * @param {string} evalString
+   * @returns {Promise<Reference>}
+   */
   async evalWithReference(evalString) {
     const result = await this.sendCommand("eval", {
       eval_string: evalString,
@@ -58,6 +80,12 @@ export default class Client {
     return this.spawnReference(id)
   }
 
+  /**
+   * Imports a module and returns a reference to it
+   *
+   * @param {string} importName
+   * @returns {Promise<Reference>}
+   */
   async import(importName) {
     const result = await this.sendCommand("import", {
       import_name: importName
@@ -65,11 +93,20 @@ export default class Client {
 
     logger.log(() => ["import", {result}])
 
+    if (!result) throw new Error("No result given")
+    if (!result.object_id) throw new Error(`No object ID given in result: ${JSON.stringify(result)}`)
+
     const id = result.object_id
 
     return this.spawnReference(id)
   }
 
+  /**
+   * Gets a registered object by name
+   *
+   * @param {string} objectName
+   * @returns {Promise<Reference>}
+   */
   async getObject(objectName) {
     const result = await this.sendCommand("get_object", {
       object_name: objectName
@@ -82,6 +119,12 @@ export default class Client {
     return this.spawnReference(id)
   }
 
+  /**
+   * Spawns a new reference to an object
+   *
+   * @param {string} id
+   * @returns {Promise<Reference>}
+   */
   async newObjectWithReference(className, ...args) {
     const result = await this.sendCommand("new_object_with_reference", {
       args: this.parseArg(args),
@@ -105,10 +148,10 @@ export default class Client {
     return false
   }
 
-  onCommand = ({command, command_id: commandID, data}) => {
+  onCommand = ({command, command_id: commandID, data, ...restArgs}) => {
     try {
       if (!command) {
-        throw new Error(`No command key given in data: ${Object.keys(data).join(", ")}`)
+        throw new Error(`No command key given in data: ${Object.keys(restArgs).join(", ")}`)
       } else if (command == "get_object") {
         const serverObject = this.getObject(data.object_name)
         let object
@@ -197,6 +240,7 @@ export default class Client {
 
           savedCommand.reject(error)
         } else {
+          logger.log(() => [`Resolving command ${commandID} with data`, data])
           savedCommand.resolve(data.data)
         }
       } else {
