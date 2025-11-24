@@ -31,7 +31,7 @@ class WebSocketClient:
       debug(f"Raw data received: {raw_data}")
 
       data = json.loads(raw_data)
-      command = data["data"]["command"]
+      command = data["command"]
       command_id = data["command_id"]
 
       debug(f"Data recieved as: {data}!")
@@ -63,7 +63,7 @@ class WebSocketClient:
       return
 
   async def respond_to_command(self, command_id, data):
-    data = {"type": "command_response", "command_id": command_id, "data": data}
+    data = {"command": "command_response", "command_id": command_id, "data": {"data": data}}
     data_json = json.dumps(data)
 
     debug(f"Reply: {data_json}")
@@ -71,7 +71,7 @@ class WebSocketClient:
     await self.ws.send(data_json)
 
   async def respond_with_error(self, command_id, error):
-    data = {"type": "command_response", "command_id": command_id, "error": error}
+    data = {"command": "command_response", "command_id": command_id, "data": {"error": error}}
     data_json = json.dumps(data)
 
     debug(f"Reply: {data_json}")

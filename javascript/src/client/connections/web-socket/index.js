@@ -19,45 +19,29 @@ export default class WebSocket {
     await this.ws.close()
   }
 
+  onCommand(callback) {
+    this.onCommandCallback = callback
+  }
+
   onSocketError = (event) => {
     logger.error(() => ["onSocketError", event])
   }
 
   onSocketMessage = (event) => {
     const data = JSON.parse(event.data)
-    const commandId = data.command_id
 
-    if (!(commandId in this.commands)) throw new Error(`Command ${commandId} not found`)
-
-    const command = this.commands[commandId]
-
-    delete this.commands[commandId]
-
-    if (data.error) {
-      command.reject(new Error(data.error))
-    } else {
-      command.resolve(data.data)
-    }
+    logger.log(() => ["Client::Connections::WebSocket onSocketMessage", data])
+    this.onCommandCallback(data)
   }
 
-  onSocketOpen = (event) => {
-    logger.log(() =>"onSocketOpen")
+  onSocketOpen = (_event) => {
+    logger.log("onSocketOpen")
   }
 
   send(data) {
-    return new Promise((resolve, reject) => {
-      const commandCount = ++this.commandsCount
-      const sendData = JSON.stringify({
-        command_id: commandCount,
-        data
-      })
-
-      this.commands[commandCount] = {resolve, reject}
-
-      logger.log(() => ["Sending", sendData])
-
-      this.ws.send(sendData)
-    })
+    const sendData = JSON.stringify(data)
+    logger.log(() => ["Sending", sendData])
+    this.ws.send(sendData)
   }
 
   waitForOpened = () => new Promise((resolve, reject) => {

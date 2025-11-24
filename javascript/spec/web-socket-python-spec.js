@@ -1,21 +1,30 @@
 import Client from "../src/client/index.js"
 import ClientWebSocket from "../src/client/connections/web-socket/index.js"
+import Logger from "../src/logger.js"
 import PythonWebSocketRunner from "../src/python-web-socket-runner.js"
 import {WebSocket} from "ws"
 
 const shared = {}
+const logger = new Logger("Scoundrel WebSocket Python Spec")
 
 describe("scoundrel - web-socket - python", () => {
   beforeEach(async () => {
+    logger.log("Starting Python with client")
     shared.pythonWebSocketRunner = new PythonWebSocketRunner()
 
+    logger.log("Running Python WebSocket runner and waiting for PID")
     await shared.pythonWebSocketRunner.runAndWaitForPid()
 
+    logger.log("Starting WebSocket client connection")
     const ws = new WebSocket("ws://localhost:53874")
+
+    logger.log("Creating ClientWebSocket")
     const clientWebSocket = new ClientWebSocket(ws)
 
+    logger.log("Waiting for WebSocket to open")
     await clientWebSocket.waitForOpened()
 
+    logger.log("Creating Scoundrel Client")
     shared.client = new Client(clientWebSocket)
   })
 

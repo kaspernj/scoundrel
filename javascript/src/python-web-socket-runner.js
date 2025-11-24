@@ -4,14 +4,17 @@ import {realpath} from "node:fs/promises"
 
 const logger = new Logger("Scoundrel PythonWebSocketRunner")
 
+// logger.setDebug(true)
+
 export default class PythonWebSocketRunner {
   constructor() {
     process.on("exit", this.onProcessExit)
   }
 
   runAndWaitForPid() {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       this.waitForPidResolve = resolve
+      this.waitForPidReject = reject
       this.run()
     })
   }
@@ -20,6 +23,8 @@ export default class PythonWebSocketRunner {
     const filePath = `${process.cwd()}/../python/server/web-socket.py`
     const fileRealPath = await realpath(filePath)
     const child = spawn("python3", [fileRealPath])
+
+    child.on("exit", this.onChildExit)
     child.stdout.on("data", this.onChildStdout)
     child.stderr.on("data", this.onChildStderr)
   }
@@ -31,8 +36,28 @@ export default class PythonWebSocketRunner {
     }
   }
 
+  onChildExit = (code, signal) => {
+    logger.log(() => `Child process exited with code ${code} and signal ${signal}`)
+
+    if (this.waitForPidRejectError) {
+      this.waitForPidReject(this.waitForPidRejectError)
+      this.waitForPidResolve = null
+      this.waitForPidReject = null
+      this.waitForPidRejectError = null
+    } else if (this.waitForPidReject) {
+      this.waitForPidReject(new Error(`Python process exited before PID was received (code: ${code}, signal: ${signal})`))
+      this.waitForPidResolve = null
+      this.waitForPidReject = null
+      this.waitForPidRejectError = null
+    }
+  }
+
   onChildStderr = (data) => {
-    logger.log(() => `stderr: ${data}`)
+    logger.error(() => `stderr: ${data}`)
+
+    if (this.waitForPidReject) {
+      this.waitForPidRejectError = new Error(`Python process stderr before PID was received: ${data}`)
+    }
   }
 
   onChildStdout = (data) => {
@@ -47,7 +72,9 @@ export default class PythonWebSocketRunner {
 
       if (this.waitForPidResolve) {
         this.waitForPidResolve()
-        this.waitForPidResolve = undefined
+        this.waitForPidResolve = null
+        this.waitForPidReject = null
+        this.waitForPidRejectError = null
       }
     }
   }
