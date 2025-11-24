@@ -54,4 +54,16 @@ describe("referenceWithProxy", () => {
     expect(firstValue).toEqual("test1")
     expect(secondValue).toEqual("test2")
   })
+
+  it("calls methods", async () => {
+    const stringObjectReference = await shared.client.newObjectWithReference("Array")
+    const stringObject = referenceWithProxy(stringObjectReference)
+
+    await stringObject.push("test1")
+    await stringObject.push("test2")
+
+    const result = await stringObject.__serialize()
+
+    expect(result).toEqual(["test1", "test2"])
+  })
 })

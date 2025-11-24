@@ -26,9 +26,8 @@ export default class Client {
   }
 
   async callMethodOnReference(referenceId, methodName, ...args) {
-    const result = await this.sendCommand({
+    const result = await this.sendCommand("call_method_on_reference", {
       args: this.parseArg(args),
-      command: "call_method_on_reference",
       method_name: methodName,
       reference_id: referenceId,
       with: "result"
@@ -38,9 +37,8 @@ export default class Client {
   }
 
   async callMethodOnReferenceWithReference(referenceId, methodName, ...args) {
-    const result = await this.sendCommand({
+    const result = await this.sendCommand("call_method_on_reference", {
       args: this.parseArg(args),
-      command: "call_method_on_reference",
       method_name: methodName,
       reference_id: referenceId,
       with: "reference"
@@ -51,8 +49,7 @@ export default class Client {
   }
 
   async evalWithReference(evalString) {
-    const result = await this.sendCommand({
-      command: "eval",
+    const result = await this.sendCommand("eval", {
       eval_string: evalString,
       with_reference: true
     })
@@ -62,8 +59,7 @@ export default class Client {
   }
 
   async import(importName) {
-    const result = await this.sendCommand({
-      command: "import",
+    const result = await this.sendCommand("import", {
       import_name: importName
     })
 
@@ -75,8 +71,7 @@ export default class Client {
   }
 
   async getObject(objectName) {
-    const result = await this.sendCommand({
-      command: "get_object",
+    const result = await this.sendCommand("get_object", {
       object_name: objectName
     })
 
@@ -88,15 +83,16 @@ export default class Client {
   }
 
   async newObjectWithReference(className, ...args) {
-    const result = await this.sendCommand({
+    const result = await this.sendCommand("new_object_with_reference", {
       args: this.parseArg(args),
-      command: "new_object_with_reference",
       class_name: className
     })
 
     if (!result) throw new Error("Blank result given")
 
     const id = result.object_id
+
+    if (!id) throw new Error(`No object ID given in result: ${JSON.stringify(result)}`)
 
     return this.spawnReference(id)
   }
@@ -109,11 +105,11 @@ export default class Client {
     return false
   }
 
-  onCommand = (commandId, data) => {
+  onCommand = ({command, command_id: commandID, data}) => {
     try {
-      if (!data.command) {
+      if (!command) {
         throw new Error(`No command key given in data: ${Object.keys(data).join(", ")}`)
-      } else if (data.command == "get_object") {
+      } else if (command == "get_object") {
         const serverObject = this.getObject(data.object_name)
         let object
 
@@ -128,8 +124,8 @@ export default class Client {
         const objectId = ++this.objectsCount
 
         this.objects[objectId] = object
-        this.respondToCommand(commandId, {object_id: objectId})
-      } else if (data.command == "new_object_with_reference") {
+        this.respondToCommand(commandID, {object_id: objectId})
+      } else if (command == "new_object_with_reference") {
         const className = data.class_name
         let object
 
@@ -146,8 +142,8 @@ export default class Client {
         const objectId = ++this.objectsCount
 
         this.objects[objectId] = object
-        this.respondToCommand(commandId, {object_id: objectId})
-      } else if (data.command == "call_method_on_reference") {
+        this.respondToCommand(commandID, {object_id: objectId})
+      } else if (command == "call_method_on_reference") {
         const referenceId = data.reference_id
         const object = this.objects[referenceId]
 
@@ -159,15 +155,15 @@ export default class Client {
 
         const response = method.call(object, ...data.args)
 
-        this.respondToCommand(commandId, {response})
-      } else if (data.command == "serialize_reference") {
+        this.respondToCommand(commandID, {response})
+      } else if (command == "serialize_reference") {
         const referenceId = data.reference_id
         const object = this.objects[referenceId]
 
         if (!object) throw new Error(`No object by that ID: ${referenceId}`)
 
-        this.respondToCommand(commandId, JSON.stringify(object))
-      } else if (data.command == "read_attribute") {
+        this.respondToCommand(commandID, JSON.stringify(object))
+      } else if (command == "read_attribute") {
         const attributeName = data.attribute_name
         const referenceId = data.reference_id
         const returnWith = data.with
@@ -181,16 +177,16 @@ export default class Client {
           const objectId = ++this.objectsCount
 
           this.objects[objectId] = attribute
-          this.respondToCommand(commandId, {response: objectId})
+          this.respondToCommand(commandID, {response: objectId})
         } else {
-          this.respondToCommand(commandId, {response: attribute})
+          this.respondToCommand(commandID, {response: attribute})
         }
-      } else if (data.command == "command_response") {
-        if (!(commandId in this.outgoingCommands)) throw new Error(`Outgoing command ${commandId} not found`)
+      } else if (command == "command_response") {
+        if (!(commandID in this.outgoingCommands)) throw new Error(`Outgoing command ${commandID} not found`)
 
-        const command = this.outgoingCommands[commandId]
+        const savedCommand = this.outgoingCommands[commandID]
 
-        delete this.outgoingCommands[commandId]
+        delete this.outgoingCommands[commandID]
 
         if (data.error) {
           const error = new Error(data.error)
@@ -199,15 +195,15 @@ export default class Client {
             error.stack = `${data.errorStack}\n\n${error.stack}`
           }
 
-          command.reject()
+          savedCommand.reject(error)
         } else {
-          command.resolve(data.data)
+          savedCommand.resolve(data.data)
         }
       } else {
-        throw new Error(`Unknown command: ${data.command}`)
+        throw new Error(`Unknown command: ${command}`)
       }
     } catch (error) {
-      this.send({command: "command_response", command_id: commandId, error: `Unknown command: ${error.message}`, errorStack: error.stack})
+      this.send({command: "command_response", command_id: commandID, error: `Unknown command: ${error.message}`, errorStack: error.stack})
 
       console.error(error)
     }
@@ -237,8 +233,7 @@ export default class Client {
   }
 
   async readAttributeOnReferenceWithReference(referenceId, attributeName) {
-    const result = await this.sendCommand({
-      command: "read_attribute",
+    const result = await this.sendCommand("read_attribute", {
       attribute_name: attributeName,
       reference_id: referenceId,
       with: "reference"
@@ -249,8 +244,7 @@ export default class Client {
   }
 
   async readAttributeOnReference(referenceId, attributeName) {
-    const result = await this.sendCommand({
-      command: "read_attribute",
+    const result = await this.sendCommand("read_attribute", {
       attribute_name: attributeName,
       reference_id: referenceId,
       with: "result"
@@ -279,13 +273,14 @@ export default class Client {
   }
 
   respondToCommand(commandId, data) {
-    this.sendCommand({command: "command_response", command_id: commandId, data})
+    this.sendCommand("command_response", {command_id: commandId, data})
   }
 
-  sendCommand(data) {
+  sendCommand(command, data) {
     return new Promise((resolve, reject) => {
       const outgoingCommandCount = ++this.outgoingCommandsCount
       const commandData = {
+        command,
         command_id: outgoingCommandCount,
         data
       }
@@ -301,7 +296,7 @@ export default class Client {
   }
 
   async serializeReference(referenceId) {
-    const json = await this.sendCommand({command: "serialize_reference", reference_id: referenceId})
+    const json = await this.sendCommand("serialize_reference", {reference_id: referenceId})
 
     return JSON.parse(json)
   }

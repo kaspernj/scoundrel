@@ -31,7 +31,7 @@ export default class WebSocket {
     const data = JSON.parse(event.data)
 
     logger.log(() => ["Client::Connections::WebSocket onSocketMessage", data])
-    this.onCommandCallback(data.command_id, data.data)
+    this.onCommandCallback(data)
   }
 
   onSocketOpen = (_event) => {

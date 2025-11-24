@@ -19,7 +19,7 @@ export default class WebSocketClient {
 
     if (!this.onCommandCallback) throw new Error("Command callback hasn't been set")
 
-    this.onCommandCallback(data.command_id, data.data)
+    this.onCommandCallback(data)
   }
 
   async send(data) {
