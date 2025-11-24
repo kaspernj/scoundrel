@@ -6,6 +6,11 @@ const logger = new Logger("Scoundrel Client")
 // logger.setDebug(true)
 
 export default class Client {
+  /**
+   * Creates a new Scoundrel Client
+   *
+   * @param {any} backend The backend connection (e.g., WebSocket)
+   */
   constructor(backend) {
     this.backend = backend
     this.backend.onCommand(this.onCommand)
@@ -21,6 +26,9 @@ export default class Client {
     this.objectsCount = 0
   }
 
+  /**
+   * Closes the client connection
+   */
   async close() {
     this.backend.close()
   }
@@ -153,7 +161,7 @@ export default class Client {
       if (!command) {
         throw new Error(`No command key given in data: ${Object.keys(restArgs).join(", ")}`)
       } else if (command == "get_object") {
-        const serverObject = this.getObject(data.object_name)
+        const serverObject = this._getRegisteredObject(data.object_name)
         let object
 
         if (serverObject) {
@@ -253,6 +261,12 @@ export default class Client {
     }
   }
 
+  /**
+   * Parases an argument for sending to the server
+   *
+   * @param {any} arg
+   * @returns {any}
+   */
   parseArg(arg) {
     if (Array.isArray(arg)) {
       return arg.map((argInArray) => this.parseArg(argInArray))
@@ -276,6 +290,13 @@ export default class Client {
     return arg
   }
 
+  /**
+   * Reads an attribute on a reference and returns a new reference
+   *
+   * @param {number} referenceId
+   * @param {string} attributeName
+   * @returns {Promise<Reference>}
+   */
   async readAttributeOnReferenceWithReference(referenceId, attributeName) {
     const result = await this.sendCommand("read_attribute", {
       attribute_name: attributeName,
@@ -287,6 +308,13 @@ export default class Client {
     return this.spawnReference(id)
   }
 
+  /**
+   * Reads an attribute on a reference and returns the result directly
+   *
+   * @param {number} referenceId
+   * @param {string} attributeName
+   * @returns {Promise<any>}
+   */
   async readAttributeOnReference(referenceId, attributeName) {
     const result = await this.sendCommand("read_attribute", {
       attribute_name: attributeName,
@@ -296,23 +324,47 @@ export default class Client {
     return result.response
   }
 
+  /**
+   * Registers a class by name
+   *
+   * @param {string} className
+   * @param {any} classInstance
+   */
   registerClass(className, classInstance) {
     if (className in this._classes) throw new Error(`Class already exists: ${className}`)
 
     this._classes[className] = classInstance
   }
 
+  /**
+   * Gets a registered class by name
+   *
+   * @param {string} className
+   * @returns {any}
+   */
   getClass(className) {
     return this._classes[className]
   }
 
+  /**
+   * Registers an object by name
+   *
+   * @param {string} objectName
+   * @param {any} objectInstance
+   */
   registerObject(objectName, objectInstance) {
     if (objectName in this._objects) throw new Error(`Object already exists: ${objectName}`)
 
     this._objects[objectName] = objectInstance
   }
 
-  getObject(objectName) {
+  /**
+   * Gets a registered object by name
+   *
+   * @param {string} objectName
+   * @returns {any}
+   */
+  _getRegisteredObject(objectName) {
     return this._objects[objectName]
   }
 
@@ -339,12 +391,24 @@ export default class Client {
     this.backend.send(data)
   }
 
+  /**
+   * Serializes a reference and returns the result directly
+   *
+   * @param {number} referenceId
+   * @returns {Promise<any>}
+   */
   async serializeReference(referenceId) {
     const json = await this.sendCommand("serialize_reference", {reference_id: referenceId})
 
     return JSON.parse(json)
   }
 
+  /**
+   * Spawns a new reference to an object
+   *
+   * @param {string} id
+   * @returns {Promise<Reference>}
+   */
   spawnReference(id) {
     const reference = new Reference(this, id)
 

@@ -6,7 +6,7 @@ export default class WebSocket {
     this.wss.on("connection", this.onConnection)
   }
 
-  close = () => this.wss.close()
+  close() { this.wss.close() }
 
   onConnection = (ws) => {
     if (!this.onNewClientCallback) throw new Error("'onNewClient' hasn't been called")
@@ -14,7 +14,7 @@ export default class WebSocket {
     this.onNewClientCallback(new WebSocketClient(ws))
   }
 
-  onNewClient = (callback) => {
+  onNewClient(callback) {
     if (!callback) throw new Error("No callback was given")
 
     this.onNewClientCallback = callback

@@ -19,6 +19,12 @@ describe("referenceWithProxy", () => {
     await shared.clientWebSocket.waitForOpened()
 
     shared.client = new Client(shared.clientWebSocket)
+
+    shared.serverClient = shared.server.getClients()[0]
+
+    if (!shared.serverClient) {
+      throw new Error("No client connected to server")
+    }
   })
 
   afterEach(async () => {
@@ -57,6 +63,18 @@ describe("referenceWithProxy", () => {
 
   it("calls methods", async () => {
     const stringObjectReference = await shared.client.newObjectWithReference("Array")
+    const stringObject = referenceWithProxy(stringObjectReference)
+
+    await stringObject.push("test1")
+    await stringObject.push("test2")
+
+    const result = await stringObject.__serialize()
+
+    expect(result).toEqual(["test1", "test2"])
+  })
+
+  it("calls methods on the client from the server", async () => {
+    const stringObjectReference = await shared.serverClient.newObjectWithReference("Array")
     const stringObject = referenceWithProxy(stringObjectReference)
 
     await stringObject.push("test1")
