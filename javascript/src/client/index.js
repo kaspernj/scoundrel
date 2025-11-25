@@ -156,7 +156,9 @@ export default class Client {
     return false
   }
 
-  onCommand = ({command, command_id: commandID, data, ...restArgs}) => {
+  onCommand = ({command, command_id: commandID, data, error, errorStack, ...restArgs}) => {
+    logger.log(() => ["onCommand", {command, commandID, data, error, errorStack, restArgs}])
+
     try {
       if (!command) {
         throw new Error(`No command key given in data: ${Object.keys(restArgs).join(", ")}`)
@@ -233,20 +235,22 @@ export default class Client {
           this.respondToCommand(commandID, {response: attribute})
         }
       } else if (command == "command_response") {
-        if (!(commandID in this.outgoingCommands)) throw new Error(`Outgoing command ${commandID} not found`)
+        if (!(commandID in this.outgoingCommands)) {
+          throw new Error(`Outgoing command ${commandID} not found: ${Object.keys(this.outgoingCommands).join(", ")}`)
+        }
 
         const savedCommand = this.outgoingCommands[commandID]
 
         delete this.outgoingCommands[commandID]
 
-        if (data.error) {
-          const error = new Error(data.error)
+        if (error) {
+          const errorToThrow = new Error(error)
 
-          if (data.errorStack) {
-            error.stack = `${data.errorStack}\n\n${error.stack}`
+          if (errorStack) {
+            errorToThrow.stack = `${errorStack}\n\n${errorToThrow.stack}`
           }
 
-          savedCommand.reject(error)
+          savedCommand.reject(errorToThrow)
         } else {
           logger.log(() => [`Resolving command ${commandID} with data`, data])
           savedCommand.resolve(data.data)
@@ -255,9 +259,9 @@ export default class Client {
         throw new Error(`Unknown command: ${command}`)
       }
     } catch (error) {
-      this.send({command: "command_response", command_id: commandID, error: `Unknown command: ${error.message}`, errorStack: error.stack})
+      this.send({command: "command_response", command_id: commandID, error: error.message, errorStack: error.stack})
 
-      console.error(error)
+      logger.error(error)
     }
   }
 

@@ -46,4 +46,19 @@ describe("scoundrel - web-socket - javascript", () => {
 
     expect(result).toEqual("test1, test2")
   })
+
+  it("handles errors from method calls", async () => {
+    const stringObject = await shared.client.newObjectWithReference("Array")
+
+    let caughtError = null
+
+    try {
+      await stringObject.callMethod("nonExistentMethod")
+    } catch (error) {
+      caughtError = error
+    }
+
+    expect(caughtError).toBeInstanceOf(Error)
+    expect(caughtError.message).toEqual("No method called 'nonExistentMethod' on a 'Array'")
+  })
 })
