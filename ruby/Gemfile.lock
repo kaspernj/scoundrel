@@ -22,7 +22,7 @@ GEM
     psych (5.2.6)
       date
       stringio
-    rdoc (6.16.0)
+    rdoc (6.16.1)
       erb
       psych (>= 4.0.0)
       tsort
