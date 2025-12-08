@@ -22,7 +22,7 @@ GEM
     psych (5.2.6)
       date
       stringio
-    rdoc (6.16.1)
+    rdoc (6.17.0)
       erb
       psych (>= 4.0.0)
       tsort
@@ -42,7 +42,7 @@ GEM
       rspec-support (~> 3.13.0)
     rspec-support (3.13.6)
     string-cases (0.0.4)
-    stringio (3.1.8)
+    stringio (3.1.9)
     tsafe (0.0.12)
     tsort (0.2.0)
     wref (0.0.11)
