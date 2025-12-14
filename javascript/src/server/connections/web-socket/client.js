@@ -1,4 +1,10 @@
+// @ts-check
+
 export default class WebSocketClient {
+  /**
+   * Creates a new WebSocketClient
+   * @param {import("ws").WebSocket} ws The WebSocket instance
+   */
   constructor(ws) {
     this.ws = ws
 
@@ -6,14 +12,23 @@ export default class WebSocketClient {
     ws.on("message", this.onMessage)
   }
 
+  /**
+   * @param {(data: any) => void} callback
+   */
   onCommand(callback) {
     this.onCommandCallback = callback
   }
 
+  /**
+   * @param {Error} error
+   */
   onError = (error) => {
     console.error("WebSocketClient error", error)
   }
 
+  /**
+   * @param {string} rawData
+   */
   onMessage = (rawData) => {
     const data = JSON.parse(rawData)
 
@@ -22,6 +37,9 @@ export default class WebSocketClient {
     this.onCommandCallback(data)
   }
 
+  /**
+   * @param {any} data
+   */
   async send(data) {
     await this.ws.send(JSON.stringify(data))
   }

@@ -1,10 +1,12 @@
 {
   "name": "scoundrel-remote-eval",
   "type": "module",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "",
   "main": "src/index.js",
   "scripts": {
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
     "test": "jasmine"
   },
   "repository": {
@@ -21,7 +23,13 @@
   },
   "homepage": "https://github.com/kaspernj/scoundrel#readme",
   "devDependencies": {
-    "jasmine": "^5.1.0"
+    "@eslint/js": "^9.39.2",
+    "@types/jasmine": "^5.1.13",
+    "@types/node": "^25.0.2",
+    "eslint": "^9.39.2",
+    "globals": "^16.5.0",
+    "jasmine": "^5.1.0",
+    "typescript": "^5.9.3"
   },
   "dependencies": {
     "ws": "^8.14.2"

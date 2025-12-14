@@ -1,3 +1,5 @@
+// @ts-check
+
 export default class Reference {
   /**
    * Creates a new Reference
