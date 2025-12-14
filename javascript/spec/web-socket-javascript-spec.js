@@ -1,3 +1,5 @@
+// @ts-check
+
 import Client from "../src/client/index.js"
 import ClientWebSocket from "../src/client/connections/web-socket/index.js"
 import Server from "../src/server/index.js"

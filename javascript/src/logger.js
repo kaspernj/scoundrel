@@ -1,3 +1,5 @@
+// @ts-check
+
 export default class Logger {
   /**
    * Creates a new Logger instance
@@ -29,13 +31,25 @@ export default class Logger {
 
   /**
    * Logs a message to the console if debug is enabled
-   *
    * @param  {...any} args
    */
   log(...args) {
     return this._sendToConsole("log", ...args)
   }
 
+  /**
+   * Logs a warning message to the console if debug is enabled
+   * @param  {...any} args
+   */
+  warn(...args) {
+    return this._sendToConsole("warn", ...args)
+  }
+
+  /**
+   * Sends the log message to the console
+   * @param {string} logType
+   * @param  {...any} args
+   */
   _sendToConsole(logType, ...args) {
     if (!this.debug) {
       return

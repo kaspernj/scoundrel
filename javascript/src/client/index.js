@@ -1,3 +1,5 @@
+// @ts-check
+
 import Logger from "../logger.js"
 import Reference from "./reference.js"
 
@@ -15,14 +17,23 @@ export default class Client {
     this.backend = backend
     this.backend.onCommand(this.onCommand)
 
+    /** @type {Record<number, any>} */
     this.outgoingCommands = {}
     this.incomingCommands = {}
     this.outgoingCommandsCount = 0
 
+    /** @type {Record<string, any>} */
     this._classes = {}
+
+    /** @type {Record<string, any>} */
     this._objects = {}
+
+    /** @type {Record<string, Reference>} */
     this.references = {}
+
+    /** @type {Record<number, any>} */
     this.objects = {}
+
     this.objectsCount = 0
   }
 
@@ -130,7 +141,8 @@ export default class Client {
   /**
    * Spawns a new reference to an object
    *
-   * @param {string} id
+   * @param {string} className
+   * @param  {...any} args
    * @returns {Promise<Reference>}
    */
   async newObjectWithReference(className, ...args) {
@@ -148,6 +160,11 @@ export default class Client {
     return this.spawnReference(id)
   }
 
+  /**
+   * Checks if the input is a plain object
+   * @param {any} input
+   * @returns {boolean}
+   */
   isPlainObject(input) {
     if (input && typeof input === "object" && !Array.isArray(input)) {
       return true
@@ -156,6 +173,15 @@ export default class Client {
     return false
   }
 
+  /**
+   * Handles an incoming command from the backend
+   * @param {object} args
+   * @param {string} args.command
+   * @param {number} args.command_id
+   * @param {any} args.data
+   * @param {string} [args.error]
+   * @param {string} [args.errorStack]
+   */
   onCommand = ({command, command_id: commandID, data, error, errorStack, ...restArgs}) => {
     logger.log(() => ["onCommand", {command, commandID, data, error, errorStack, restArgs}])
 
@@ -169,7 +195,7 @@ export default class Client {
         if (serverObject) {
           object = serverObject
         } else {
-          object = global[data.object_name]
+          object = globalThis[data.object_name]
 
           if (!object) throw new Error(`No such object: ${data.object_name}`)
         }
@@ -183,7 +209,7 @@ export default class Client {
         let object
 
         if (typeof className == "string") {
-          const ClassInstance = this.getClass(className) || global[className]
+          const ClassInstance = this.getClass(className) || globalThis[className]
 
           if (!ClassInstance) throw new Error(`No such class: ${className}`)
 
@@ -259,7 +285,11 @@ export default class Client {
         throw new Error(`Unknown command: ${command}`)
       }
     } catch (error) {
-      this.send({command: "command_response", command_id: commandID, error: error.message, errorStack: error.stack})
+      if (error instanceof Error) {
+        this.send({command: "command_response", command_id: commandID, error: error.message, errorStack: error.stack})
+      } else {
+        this.send({command: "command_response", command_id: commandID, error: String(error)})
+      }
 
       logger.error(error)
     }
@@ -280,6 +310,7 @@ export default class Client {
         __scoundrel_type: "reference"
       }
     } else if (this.isPlainObject(arg)) {
+      /** @type {Record<any, any>} */
       const newObject = {}
 
       for (const key in arg) {
@@ -372,10 +403,21 @@ export default class Client {
     return this._objects[objectName]
   }
 
+  /**
+   * Responds to a command from the backend
+   * @param {number} commandId
+   * @param {any} data
+   */
   respondToCommand(commandId, data) {
     this.sendCommand("command_response", {command_id: commandId, data})
   }
 
+  /**
+   * Sends a command to the backend and returns a promise that resolves with the response
+   * @param {string} command
+   * @param {any} data
+   * @returns {Promise<any>}
+   */
   sendCommand(command, data) {
     return new Promise((resolve, reject) => {
       const outgoingCommandCount = ++this.outgoingCommandsCount
@@ -391,6 +433,10 @@ export default class Client {
     })
   }
 
+  /**
+   * Sends data to the backend
+   * @param {any} data
+   */
   send(data) {
     this.backend.send(data)
   }
@@ -411,7 +457,7 @@ export default class Client {
    * Spawns a new reference to an object
    *
    * @param {string} id
-   * @returns {Promise<Reference>}
+   * @returns {Reference}
    */
   spawnReference(id) {
     const reference = new Reference(this, id)

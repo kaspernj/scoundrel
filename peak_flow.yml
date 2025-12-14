@@ -12,3 +12,5 @@ builds:
     name: JavaScript
     script:
       - cd javascript && npm install && npm test
+      - cd javascript && npm run lint
+      - cd javascript && npm run typecheck

@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "checkJs": true,
+    "noEmit": true,
+    "target": "ES2020",
+
+    "moduleResolution": "nodenext",
+    "module": "nodenext",
+
+    "lib": ["dom", "ES2020"],
+    "types": ["jasmine", "node"]
+  }
+}

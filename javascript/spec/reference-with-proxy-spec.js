@@ -1,3 +1,5 @@
+// @ts-check
+
 import Client from "../src/client/index.js"
 import ClientWebSocket from "../src/client/connections/web-socket/index.js"
 import referenceWithProxy from "../src/client/reference-proxy.js"
@@ -36,9 +38,13 @@ describe("referenceWithProxy", () => {
     const stringObjectReference = await shared.client.newObjectWithReference("Array")
     const stringObject = referenceWithProxy(stringObjectReference)
 
+    // @ts-ignore
     await stringObject.push("test1")
+
+    // @ts-ignore
     await stringObject.push("test2")
 
+    // @ts-ignore
     const result = await stringObject.__serialize()
 
     expect(result).toEqual(["test1", "test2"])
@@ -65,9 +71,13 @@ describe("referenceWithProxy", () => {
     const stringObjectReference = await shared.client.newObjectWithReference("Array")
     const stringObject = referenceWithProxy(stringObjectReference)
 
+    // @ts-ignore
     await stringObject.push("test1")
+
+    // @ts-ignore
     await stringObject.push("test2")
 
+    // @ts-ignore
     const result = await stringObject.__serialize()
 
     expect(result).toEqual(["test1", "test2"])
@@ -77,9 +87,13 @@ describe("referenceWithProxy", () => {
     const stringObjectReference = await shared.serverClient.newObjectWithReference("Array")
     const stringObject = referenceWithProxy(stringObjectReference)
 
+    // @ts-ignore
     await stringObject.push("test1")
+
+    // @ts-ignore
     await stringObject.push("test2")
 
+    // @ts-ignore
     const result = await stringObject.__serialize()
 
     expect(result).toEqual(["test1", "test2"])

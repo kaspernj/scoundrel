@@ -1,12 +1,23 @@
+// @ts-check
+
 import {exec, spawn} from "child_process"
 import Logger from "./logger.js"
-import {realpath} from "node:fs/promises"
+import {realpath} from "fs/promises"
 
 const logger = new Logger("Scoundrel PythonWebSocketRunner")
 
 // logger.setDebug(true)
 
 export default class PythonWebSocketRunner {
+  /** @type {Error | null} */
+  waitForPidRejectError = null
+
+  /** @type {((value: any) => void) | null} */
+  waitForPidResolve = null
+
+  /** @type {((value: any) => void) | null} */
+  waitForPidReject = null
+
   constructor() {
     process.on("exit", this.onProcessExit)
   }
@@ -36,10 +47,18 @@ export default class PythonWebSocketRunner {
     }
   }
 
+  /**
+   * @param {number} code
+   * @param {string} signal
+   */
   onChildExit = (code, signal) => {
     logger.log(() => `Child process exited with code ${code} and signal ${signal}`)
 
     if (this.waitForPidRejectError) {
+      if (!this.waitForPidReject) {
+        throw new Error("waitForPidReject is undefined while waitForPidRejectError is set")
+      }
+
       this.waitForPidReject(this.waitForPidRejectError)
       this.waitForPidResolve = null
       this.waitForPidReject = null
@@ -52,6 +71,9 @@ export default class PythonWebSocketRunner {
     }
   }
 
+  /**
+   * @param {string | Buffer} data
+   */
   onChildStderr = (data) => {
     logger.error(() => `stderr: ${data}`)
 
@@ -60,6 +82,9 @@ export default class PythonWebSocketRunner {
     }
   }
 
+  /**
+   * @param {string | Buffer} data
+   */
   onChildStdout = (data) => {
     logger.log(() => `stdout: ${data}`)
 
@@ -71,7 +96,11 @@ export default class PythonWebSocketRunner {
       logger.log(() => `Registered PID ${this.pid}`)
 
       if (this.waitForPidResolve) {
-        this.waitForPidResolve()
+        if (!this.waitForPidResolve) {
+          throw new Error("waitForPidResolve is undefined while waitForPidRejectError is set")
+        }
+
+        this.waitForPidResolve(null)
         this.waitForPidResolve = null
         this.waitForPidReject = null
         this.waitForPidRejectError = null
