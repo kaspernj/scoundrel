@@ -38,7 +38,7 @@ const proxyObjectHandler = {
     if (typeof receiver == "function") receiver = receiver() // eslint-disable-line no-unreachable
 
     // @ts-expect-error
-    if (!(prop in receiver)) throw new PropertyNotFoundError(`Property not found: ${prop}`)
+    if (!(prop in receiver)) throw new PropertyNotFoundError(`Property not found: ${prop}`) // eslint-disable-line no-undef
 
     return Reflect.set(receiver, prop, newValue)
   }
