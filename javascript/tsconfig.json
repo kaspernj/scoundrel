@@ -1,13 +1,15 @@
 {
   "compilerOptions": {
+    "allowJs": true,
     "checkJs": true,
-    "noEmit": true,
+    "declaration": true,
+    "declarationMap": true,
+    "lib": ["dom", "ES2020"],
+    "outDir": "build",
     "target": "ES2020",
-
     "moduleResolution": "nodenext",
     "module": "nodenext",
-
-    "lib": ["dom", "ES2020"],
     "types": ["jasmine", "node"]
-  }
+  },
+  "include": ["src/**/*"]
 }
