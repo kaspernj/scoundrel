@@ -3,11 +3,16 @@
   "type": "module",
   "version": "1.0.8",
   "description": "",
-  "main": "src/index.js",
+  "main": "build/index.js",
+  "types": "build/index.d.ts",
+  "files": ["build/**"],
   "scripts": {
+    "build": "rm -rf build && tsc",
     "lint": "eslint",
+    "prepublishOnly": "npm run build",
     "typecheck": "tsc --noEmit",
-    "test": "jasmine"
+    "test": "jasmine",
+    "watch": "tsc -w"
   },
   "repository": {
     "type": "git",
