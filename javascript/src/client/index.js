@@ -12,8 +12,9 @@ export default class Client {
    * Creates a new Scoundrel Client
    *
    * @param {any} backend The backend connection (e.g., WebSocket)
+   * @param {{enableServerControl?: boolean}} [options]
    */
-  constructor(backend) {
+  constructor(backend, options = {}) {
     this.backend = backend
     this.backend.onCommand(this.onCommand)
 
@@ -35,6 +36,9 @@ export default class Client {
     this.objects = {}
 
     this.objectsCount = 0
+
+    /** @type {boolean} */
+    this.serverControlEnabled = Boolean(options.enableServerControl)
   }
 
   /**
@@ -90,13 +94,9 @@ export default class Client {
    * @returns {Promise<Reference>}
    */
   async evalWithReference(evalString) {
-    const result = await this.sendCommand("eval", {
-      eval_string: evalString,
-      with_reference: true
-    })
-    const id = result.object_id
+    const evalReference = await this.getObject("eval")
 
-    return this.spawnReference(id)
+    return await evalReference.callMethodWithReference("call", null, evalString)
   }
 
   /**
@@ -188,6 +188,30 @@ export default class Client {
     try {
       if (!command) {
         throw new Error(`No command key given in data: ${Object.keys(restArgs).join(", ")}`)
+      } else if (command == "command_response") {
+        if (!(commandID in this.outgoingCommands)) {
+          throw new Error(`Outgoing command ${commandID} not found: ${Object.keys(this.outgoingCommands).join(", ")}`)
+        }
+
+        const savedCommand = this.outgoingCommands[commandID]
+
+        delete this.outgoingCommands[commandID]
+
+        if (error) {
+          const errorToThrow = new Error(error)
+
+          if (errorStack) {
+            errorToThrow.stack = `${errorStack}\n\n${errorToThrow.stack}`
+          }
+
+          savedCommand.reject(errorToThrow)
+        } else {
+          logger.log(() => [`Resolving command ${commandID} with data`, data])
+          savedCommand.resolve(data.data)
+        }
+      } else if (!this.serverControlEnabled) {
+        this.send({command: "command_response", command_id: commandID, error: "Server control is disabled"})
+        return
       } else if (command == "get_object") {
         const serverObject = this._getRegisteredObject(data.object_name)
         let object
@@ -234,7 +258,14 @@ export default class Client {
 
         const response = method.call(object, ...data.args)
 
-        this.respondToCommand(commandID, {response})
+        if (data.with == "reference") {
+          const objectId = ++this.objectsCount
+
+          this.objects[objectId] = response
+          this.respondToCommand(commandID, {response: objectId})
+        } else {
+          this.respondToCommand(commandID, {response})
+        }
       } else if (command == "serialize_reference") {
         const referenceId = data.reference_id
         const object = this.objects[referenceId]
@@ -284,27 +315,6 @@ export default class Client {
           })
         } else {
           respondWithResult(evalResult)
-        }
-      } else if (command == "command_response") {
-        if (!(commandID in this.outgoingCommands)) {
-          throw new Error(`Outgoing command ${commandID} not found: ${Object.keys(this.outgoingCommands).join(", ")}`)
-        }
-
-        const savedCommand = this.outgoingCommands[commandID]
-
-        delete this.outgoingCommands[commandID]
-
-        if (error) {
-          const errorToThrow = new Error(error)
-
-          if (errorStack) {
-            errorToThrow.stack = `${errorStack}\n\n${errorToThrow.stack}`
-          }
-
-          savedCommand.reject(errorToThrow)
-        } else {
-          logger.log(() => [`Resolving command ${commandID} with data`, data])
-          savedCommand.resolve(data.data)
         }
       } else {
         throw new Error(`Unknown command: ${command}`)
@@ -490,5 +500,9 @@ export default class Client {
     this.references[id] = reference
 
     return reference
+  }
+
+  enableServerControl() {
+    this.serverControlEnabled = true
   }
 }
