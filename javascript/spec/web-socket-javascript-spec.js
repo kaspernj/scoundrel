@@ -63,4 +63,18 @@ describe("scoundrel - web-socket - javascript", () => {
     expect(caughtError).toBeInstanceOf(Error)
     expect(caughtError.message).toEqual("No method called 'nonExistentMethod' on a 'Array'")
   })
+
+  it("lets the server eval code on the client", async () => {
+    const serverClient = shared.server.getClients()[0]
+
+    if (!serverClient) throw new Error("No client connected to server")
+
+    const evaluatedArray = await serverClient.evalWithReference("(() => { const values = ['from client eval']; values.push('more values'); return values })()")
+
+    await evaluatedArray.callMethod("push", "after eval")
+
+    const result = await evaluatedArray.serialize()
+
+    expect(result).toEqual(["from client eval", "more values", "after eval"])
+  })
 })

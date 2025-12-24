@@ -260,6 +260,31 @@ export default class Client {
         } else {
           this.respondToCommand(commandID, {response: attribute})
         }
+      } else if (command == "eval") {
+        const respondWithResult = (evalResult) => {
+          if (data.with_reference) {
+            const objectId = ++this.objectsCount
+
+            this.objects[objectId] = evalResult
+            this.respondToCommand(commandID, {object_id: objectId})
+          } else {
+            this.respondToCommand(commandID, {response: evalResult})
+          }
+        }
+
+        const evalResult = eval(data.eval_string)
+
+        if (evalResult && typeof evalResult.then == "function") {
+          evalResult.then(respondWithResult).catch((promiseError) => {
+            if (promiseError instanceof Error) {
+              this.send({command: "command_response", command_id: commandID, error: promiseError.message, errorStack: promiseError.stack})
+            } else {
+              this.send({command: "command_response", command_id: commandID, error: String(promiseError)})
+            }
+          })
+        } else {
+          respondWithResult(evalResult)
+        }
       } else if (command == "command_response") {
         if (!(commandID in this.outgoingCommands)) {
           throw new Error(`Outgoing command ${commandID} not found: ${Object.keys(this.outgoingCommands).join(", ")}`)
