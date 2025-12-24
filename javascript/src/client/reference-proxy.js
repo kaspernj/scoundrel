@@ -32,15 +32,10 @@ const proxyObjectHandler = {
    * @param {any} newValue
    */
   set(receiver, prop, newValue) {
+    void receiver
+    void prop
+    void newValue
     throw new Error("set property isn't supported yet")
-
-    // @ts-expect-error
-    if (typeof receiver == "function") receiver = receiver() // eslint-disable-line no-unreachable
-
-    // @ts-expect-error
-    if (!(prop in receiver)) throw new PropertyNotFoundError(`Property not found: ${prop}`) // eslint-disable-line no-undef
-
-    return Reflect.set(receiver, prop, newValue)
   }
 }
 

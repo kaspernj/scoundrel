@@ -61,10 +61,10 @@ export default class WebSocket {
   }
 
   /**
-   * @param {Event} _event
+   * @param {Event} event
    */
-  onSocketOpen = (_event) => { // eslint-disable-line no-unused-vars
-    logger.log("onSocketOpen")
+  onSocketOpen = (event) => {
+    logger.log(() => ["onSocketOpen", event])
   }
 
   /**

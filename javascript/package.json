@@ -7,6 +7,7 @@
   "types": "build/index.d.ts",
   "files": ["build/**"],
   "scripts": {
+    "all-checks": "npm run typecheck && npm run lint && npm run test",
     "build": "rm -rf build && tsc",
     "lint": "eslint",
     "prepublishOnly": "npm run build",

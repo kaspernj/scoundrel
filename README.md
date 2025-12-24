@@ -37,3 +37,18 @@ expect(result).toEqual(-1)
 client.close()
 pythonWebSocketRunner.close()
 ```
+
+### Server-to-client control (JavaScript)
+
+By default, a client refuses server-initiated commands. Enable it by passing `enableServerControl: true` when constructing the client:
+
+```js
+const client = new Client(clientWebSocket, {enableServerControl: true})
+```
+
+If you want to explicitly disable server control (the default), pass `enableServerControl: false` or omit the option:
+
+```js
+const client = new Client(clientWebSocket, {enableServerControl: false})
+// equivalent to: new Client(clientWebSocket)
+```

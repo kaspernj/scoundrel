@@ -34,7 +34,7 @@ export default class ScoundrelServer {
    * @returns {void}
    */
   onNewClientFromBackend = (clientBackend) => {
-    const client = new Client(clientBackend)
+    const client = new Client(clientBackend, {enableServerControl: true})
 
     this.clients.push(client)
     this.events.emit("newClient", client)
