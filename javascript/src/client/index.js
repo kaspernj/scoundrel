@@ -464,7 +464,7 @@ export default class Client {
    * @param {any} data
    */
   respondToCommand(commandId, data) {
-    this.sendCommand("command_response", {command_id: commandId, data})
+    this.send({command: "command_response", command_id: commandId, data: {command_id: commandId, data}})
   }
 
   /**
