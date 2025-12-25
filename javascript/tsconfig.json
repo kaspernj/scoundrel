@@ -4,11 +4,13 @@
     "checkJs": true,
     "declaration": true,
     "declarationMap": true,
+    "inlineSourceMap": true,
+    "inlineSources": true,
     "lib": ["dom", "ES2020"],
-    "outDir": "build",
-    "target": "ES2020",
     "moduleResolution": "nodenext",
     "module": "nodenext",
+    "outDir": "build",
+    "target": "ES2020",
     "types": ["jasmine", "node"]
   },
   "include": ["src/**/*"]
