@@ -291,15 +291,29 @@ export default class Client {
 
         if (!method) throw new Error(`No method called '${data.method_name}' on a '${object.constructor.name}'`)
 
+        const respondWithValue = (responseValue) => {
+          if (data.with == "reference") {
+            const objectId = ++this.objectsCount
+
+            this.objects[objectId] = responseValue
+            this.respondToCommand(commandID, {response: objectId})
+          } else {
+            this.respondToCommand(commandID, {response: responseValue})
+          }
+        }
+
         const response = method.call(object, ...data.args)
 
-        if (data.with == "reference") {
-          const objectId = ++this.objectsCount
-
-          this.objects[objectId] = response
-          this.respondToCommand(commandID, {response: objectId})
+        if (response && typeof response.then == "function") {
+          response.then(respondWithValue).catch((promiseError) => {
+            if (promiseError instanceof Error) {
+              this.send({command: "command_response", command_id: commandID, error: promiseError.message, errorStack: promiseError.stack})
+            } else {
+              this.send({command: "command_response", command_id: commandID, error: String(promiseError)})
+            }
+          })
         } else {
-          this.respondToCommand(commandID, {response})
+          respondWithValue(response)
         }
       } else if (command == "serialize_reference") {
         const referenceId = data.reference_id
