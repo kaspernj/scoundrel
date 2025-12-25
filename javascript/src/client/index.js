@@ -2,6 +2,7 @@
 
 import Logger from "../logger.js"
 import Reference from "./reference.js"
+import safeJSONStringify from "../utils/safe-json-stringify.js"
 
 const logger = new Logger("Scoundrel Client")
 
@@ -306,7 +307,8 @@ export default class Client {
 
         if (!object) throw new Error(`No object by that ID: ${referenceId}`)
 
-        this.respondToCommand(commandID, JSON.stringify(object))
+        const serialized = safeJSONStringify(object)
+        this.respondToCommand(commandID, serialized)
       } else if (command == "read_attribute") {
         const attributeName = data.attribute_name
         const referenceId = data.reference_id
