@@ -243,14 +243,17 @@ export default class Client {
         return
       } else if (command == "get_object") {
         const serverObject = this._getRegisteredObject(data.object_name)
+        const serverClass = this._getRegisteredClass(data.object_name)
         let object
 
-        if (serverObject) {
+        if (serverObject !== undefined) {
           object = serverObject
+        } else if (serverClass !== undefined) {
+          object = serverClass
         } else {
           object = globalThis[data.object_name]
 
-          if (!object) throw new Error(`No such object: ${data.object_name}`)
+          if (object === undefined) throw new Error(`No such object: ${data.object_name}`)
         }
 
         const objectId = ++this.objectsCount
@@ -436,7 +439,17 @@ export default class Client {
   registerClass(className, classInstance) {
     if (className in this._classes) throw new Error(`Class already exists: ${className}`)
 
-    this._classes[className] = classInstance
+   this._classes[className] = classInstance
+  }
+
+  /**
+   * Gets a registered class by name
+   *
+   * @param {string} className
+   * @returns {any}
+   */
+  _getRegisteredClass(className) {
+    return this._classes[className]
   }
 
   /**
