@@ -34,16 +34,18 @@ describe("scoundrel - web-socket - javascript", () => {
       await runWithWebSocketServerClient(async ({client}) => {
         const stringObject = await client.newObjectWithReference("Array")
 
+        /** @type {Error | null} */
         let caughtError = null
 
         try {
           await stringObject.callMethod("nonExistentMethod")
         } catch (error) {
-          caughtError = error
+          caughtError = error instanceof Error ? error : new Error(String(error))
         }
 
+        expect(caughtError).not.toBeNull()
         expect(caughtError).toBeInstanceOf(Error)
-        expect(caughtError.message).toEqual("No method called 'nonExistentMethod' on a 'Array'")
+        expect(caughtError && caughtError.message).toEqual("No method called 'nonExistentMethod' on a 'Array'")
       })
     })
 
@@ -65,6 +67,33 @@ describe("scoundrel - web-socket - javascript", () => {
           const result = await evaluatedArray.serialize()
 
           expect(result).toEqual(["from client eval", "more values", "after eval"])
+        },
+        {enableServerControl: true}
+      )
+    })
+
+    it("makes registered objects and classes available inside evalWithReference", async () => {
+      await runWithWebSocketServerClient(
+        async ({client, serverClient}) => {
+          class TestGreeter {
+            /** @param {string} prefix */
+            constructor(prefix) {
+              this.prefix = prefix
+            }
+
+            /** @param {string} name */
+            greet(name) {
+              return `${this.prefix} ${name}`
+            }
+          }
+
+          client.registerClass("TestGreeter", TestGreeter)
+          client.registerObject("testSettings", {prefix: "Hello"})
+
+          const evaluated = await serverClient.evalWithReference("(() => { const greeter = new TestGreeter(testSettings.prefix); return greeter.greet('World') })()")
+          const result = await evaluated.serialize()
+
+          expect(result).toEqual("Hello World")
         },
         {enableServerControl: true}
       )

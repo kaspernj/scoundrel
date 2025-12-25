@@ -52,3 +52,28 @@ If you want to explicitly disable server control (the default), pass `enableServ
 const client = new Client(clientWebSocket, {enableServerControl: false})
 // equivalent to: new Client(clientWebSocket)
 ```
+
+Registered objects and classes are available inside `evalWithReference`:
+
+```js
+const client = new Client(clientWebSocket, {enableServerControl: true})
+
+class TestGreeter {
+  constructor(prefix) {
+    this.prefix = prefix
+  }
+
+  greet(name) {
+    return `${this.prefix} ${name}`
+  }
+}
+
+client.registerClass("TestGreeter", TestGreeter)
+client.registerObject("testSettings", {prefix: "Hello"})
+
+const serverClient = server.getClients()[0] // from your ScoundrelServer instance
+const greetingRef = await serverClient.evalWithReference("(() => { const greeter = new TestGreeter(testSettings.prefix); return greeter.greet('World') })()")
+const greeting = await greetingRef.serialize()
+
+expect(greeting).toEqual("Hello World")
+```
