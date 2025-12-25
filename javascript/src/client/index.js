@@ -214,7 +214,9 @@ export default class Client {
               .split("\n")
               .map((line) => line.trim())
               .filter((line) => line)
-              .filter((line) => !/node_modules\/ws|node:|internal\//.test(line))
+              .filter((line) => !/node_modules\/ws/.test(line))
+              .filter((line) => !/(?:^|\()node:/.test(line))
+              .filter((line) => !/(?:^|[\\/])internal\//.test(line))
               .filter((line) => !line.startsWith("Error:"))
           }
 
