@@ -98,5 +98,27 @@ describe("scoundrel - web-socket - javascript", () => {
         {enableServerControl: true}
       )
     })
+
+    it("awaits async methods when calling them", async () => {
+      await runWithWebSocketServerClient(
+        async ({client, serverClient}) => {
+          class AsyncGreeter {
+            /** @param {string} name */
+            async customMethod(name) {
+              await Promise.resolve()
+              return `Hello ${name}`
+            }
+          }
+
+          client.registerClass("AsyncGreeter", AsyncGreeter)
+
+          const reference = await serverClient.newObjectWithReference("AsyncGreeter")
+          const greeting = await reference.callMethod("customMethod", "World")
+
+          expect(greeting).toEqual("Hello World")
+        },
+        {enableServerControl: true}
+      )
+    })
   })
 })
