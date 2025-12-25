@@ -34,6 +34,10 @@ client.close()
 pythonWebSocketRunner.close()
 ```
 
+## Serialization
+
+`Reference#serialize()` only supports JSON-safe values (strings, numbers, booleans, null, plain objects, and arrays). It throws an error if the value contains functions, symbols, bigints, class instances/non-plain objects, circular references, non-finite numbers, or other unsupported types.
+
 ## Calling static methods on classes
 
 You can ask for a reference to a class (either globally available or registered with `registerClass`) and call its static methods:
