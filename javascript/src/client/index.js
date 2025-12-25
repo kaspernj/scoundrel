@@ -199,10 +199,30 @@ export default class Client {
 
         if (error) {
           const errorToThrow = new Error(error)
-
-          if (errorStack) {
-            errorToThrow.stack = `${errorStack}\n\n${errorToThrow.stack}`
+          const sanitizeStack = (stack) => {
+            if (!stack) return []
+            return stack
+              .split("\n")
+              .map((line) => line.trim())
+              .filter((line) => line)
+              .filter((line) => !/node_modules\/ws|node:|internal\//.test(line))
+              .filter((line) => !line.startsWith("Error:"))
           }
+
+          const formatSection = (label, stack) => {
+            const lines = sanitizeStack(stack)
+            if (lines.length === 0) return []
+            return [`${label} ${lines[0]}`, ...lines.slice(1)]
+          }
+
+          const combinedStack = [
+            `Error: ${error}`,
+            ...formatSection("[SCOUNTDREL-SERVER]", errorStack),
+            ...formatSection("[SCOUNDREL-CLIENT]", errorToThrow.stack),
+            ...formatSection("[SCOUNDREL-CLIENT]", savedCommand.originStack ? `Command created at:\n${savedCommand.originStack}` : null)
+          ].join("\n")
+
+          errorToThrow.stack = combinedStack
 
           savedCommand.reject(errorToThrow)
         } else {
@@ -456,13 +476,16 @@ export default class Client {
   sendCommand(command, data) {
     return new Promise((resolve, reject) => {
       const outgoingCommandCount = ++this.outgoingCommandsCount
+      const originError = new Error(`Command '${command}' dispatched`)
+      // Strip the sendCommand frame to highlight the caller site.
+      if (Error.captureStackTrace) Error.captureStackTrace(originError, this.sendCommand)
       const commandData = {
         command,
         command_id: outgoingCommandCount,
         data
       }
 
-      this.outgoingCommands[outgoingCommandCount] = {resolve, reject}
+      this.outgoingCommands[outgoingCommandCount] = {resolve, reject, originStack: originError.stack}
       logger.log(() => ["Sending", commandData])
       this.send(commandData)
     })
