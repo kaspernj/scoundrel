@@ -9,4 +9,5 @@ npm run all-checks
 version=$(npm pkg get version | tr -d '"')
 git add package.json package-lock.json
 git commit -m "Release v$version"
+git push origin master
 npm publish
