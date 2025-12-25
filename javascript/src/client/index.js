@@ -94,9 +94,18 @@ export default class Client {
    * @returns {Promise<Reference>}
    */
   async evalWithReference(evalString) {
-    const evalReference = await this.getObject("eval")
+    const result = await this.sendCommand("eval", {
+      eval_string: evalString,
+      with_reference: true
+    })
 
-    return await evalReference.callMethodWithReference("call", null, evalString)
+    if (!result) throw new Error("Blank result given")
+
+    const objectId = result.object_id
+
+    if (!objectId) throw new Error(`No object ID given in result: ${JSON.stringify(result)}`)
+
+    return this.spawnReference(objectId)
   }
 
   /**
@@ -323,7 +332,11 @@ export default class Client {
           }
         }
 
-        const evalResult = eval(data.eval_string)
+        const scope = {...this._objects, ...this._classes}
+        const scopeKeys = Object.keys(scope)
+        // Ensure registered objects/classes are available as locals inside the eval
+        const evaluator = new Function("__evalString", ...scopeKeys, "return eval(__evalString)")
+        const evalResult = evaluator(data.eval_string, ...scopeKeys.map((key) => scope[key]))
 
         if (evalResult && typeof evalResult.then == "function") {
           evalResult.then(respondWithResult).catch((promiseError) => {
