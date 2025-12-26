@@ -134,5 +134,36 @@ describe("scoundrel - web-socket - javascript", () => {
         {enableServerControl: true}
       )
     })
+
+    it("unregisters classes and objects so they cannot be fetched", async () => {
+      await runWithWebSocketServerClient(
+        async ({client, serverClient}) => {
+          class TestMath {
+            /** @param {number} a @param {number} b */
+            static add(a, b) {
+              return a + b
+            }
+          }
+
+          client.registerClass("TestMath", TestMath)
+          client.registerObject("testSettings", {value: 42})
+
+          const mathRef = await serverClient.getObject("TestMath")
+          const sum = await mathRef.callMethod("add", 1, 2)
+          expect(sum).toEqual(3)
+
+          const settingsRef = await serverClient.getObject("testSettings")
+          const settings = await settingsRef.serialize()
+          expect(settings).toEqual({value: 42})
+
+          client.unregisterClass("TestMath")
+          client.unregisterObject("testSettings")
+
+          await expectAsync(serverClient.getObject("TestMath")).toBeRejectedWithError("No such object: TestMath")
+          await expectAsync(serverClient.getObject("testSettings")).toBeRejectedWithError("No such object: testSettings")
+        },
+        {enableServerControl: true}
+      )
+    })
   })
 })

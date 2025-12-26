@@ -514,7 +514,18 @@ export default class Client {
   registerClass(className, classInstance) {
     if (className in this._classes) throw new Error(`Class already exists: ${className}`)
 
-   this._classes[className] = classInstance
+    this._classes[className] = classInstance
+  }
+
+  /**
+   * Unregisters a class by name
+   *
+   * @param {string} className
+   */
+  unregisterClass(className) {
+    if (!(className in this._classes)) throw new Error(`Class does not exist: ${className}`)
+
+    delete this._classes[className]
   }
 
   /**
@@ -547,6 +558,17 @@ export default class Client {
     if (objectName in this._objects) throw new Error(`Object already exists: ${objectName}`)
 
     this._objects[objectName] = objectInstance
+  }
+
+  /**
+   * Unregisters an object by name
+   *
+   * @param {string} objectName
+   */
+  unregisterObject(objectName) {
+    if (!(objectName in this._objects)) throw new Error(`Object does not exist: ${objectName}`)
+
+    delete this._objects[objectName]
   }
 
   /**
