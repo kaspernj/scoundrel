@@ -76,6 +76,7 @@ describe("Client stack traces", () => {
             "Error: Kaboom from server",
             "    at internalHelper (/home/dev/Development/scoundrel/javascript/src/internal/helpers.js:12:3)",
             "    at nodeInternals (node:internal/process/task_queues:95:5)",
+            "    at processTicksAndRejections (internal/process/task_queues.js:95:5)",
             "    at ExplodingClass.boom (/home/dev/Development/scoundrel/javascript/spec/client-stack-trace-spec.js:0:0)"
           ].join("\n")
           throw error
@@ -98,6 +99,7 @@ describe("Client stack traces", () => {
       expect(caughtError).toBeInstanceOf(Error)
       expect(caughtError?.stack).toContain("src/internal/helpers.js")
       expect(caughtError?.stack).not.toContain("node:internal/process/task_queues")
+      expect(caughtError?.stack).not.toContain("internal/process/task_queues.js")
     })
   })
 })
