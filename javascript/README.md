@@ -106,3 +106,10 @@ const greeting = await greetingRef.serialize()
 
 expect(greeting).toEqual("Hello World")
 ```
+
+You can unregister classes or objects to remove them from server-side lookups and `evalWithReference` scope:
+
+```js
+client.unregisterClass("TestGreeter")
+client.unregisterObject("testSettings")
+```

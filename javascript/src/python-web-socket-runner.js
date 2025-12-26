@@ -48,8 +48,8 @@ export default class PythonWebSocketRunner {
   }
 
   /**
-   * @param {number} code
-   * @param {string} signal
+   * @param {number} code Exit code
+   * @param {string} signal Exit signal
    */
   onChildExit = (code, signal) => {
     logger.log(() => `Child process exited with code ${code} and signal ${signal}`)
@@ -72,7 +72,7 @@ export default class PythonWebSocketRunner {
   }
 
   /**
-   * @param {string | Buffer} data
+   * @param {string | Buffer} data Raw stderr output
    */
   onChildStderr = (data) => {
     logger.error(() => `stderr: ${data}`)
@@ -83,7 +83,7 @@ export default class PythonWebSocketRunner {
   }
 
   /**
-   * @param {string | Buffer} data
+   * @param {string | Buffer} data Raw stdout output
    */
   onChildStdout = (data) => {
     logger.log(() => `stdout: ${data}`)

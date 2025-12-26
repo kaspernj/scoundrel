@@ -15,7 +15,10 @@ describe("static class methods", () => {
   it("calls static methods on a registered class reference", async () => {
     await runWithWebSocketServerClient(async ({client, serverClient}) => {
       class StaticClass {
-        /** @param {string} name */
+        /**
+         * @param {string} name Name to greet
+         * @returns {string} Greeting message
+         */
         static greet(name) { return `Hello ${name}` }
       }
 

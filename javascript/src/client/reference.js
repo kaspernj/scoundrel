@@ -3,7 +3,6 @@
 export default class Reference {
   /**
    * Creates a new Reference
-   *
    * @param {any} client The client instance
    * @param {string} id The reference ID
    */
@@ -16,10 +15,9 @@ export default class Reference {
 
   /**
    * Calls a method on the reference
-   *
-   * @param {string} methodName
-   * @param  {...any} args
-   * @returns {Promise<any>}
+   * @param {string} methodName Method name to invoke
+   * @param  {...any} args Arguments to pass to the method
+   * @returns {Promise<any>} Result from the method call
    */
   async callMethod(methodName, ...args) {
     return await this.client.callMethodOnReference(this.id, methodName, ...args)
@@ -27,10 +25,9 @@ export default class Reference {
 
   /**
    * Calls a method on the reference using another reference as argument
-   *
-   * @param {string} methodName
-   * @param  {...any} args
-   * @returns {Promise<any>}
+   * @param {string} methodName Method name to invoke
+   * @param  {...any} args Arguments to pass to the method
+   * @returns {Promise<any>} Result from the method call
    */
   async callMethodWithReference(methodName, ...args) {
     return await this.client.callMethodOnReferenceWithReference(this.id, methodName, ...args)
@@ -38,10 +35,9 @@ export default class Reference {
 
   /**
    * Reads an attribute from the reference
-   *
-   * @param {string} attributeName
-   * @param  {...any} args
-   * @returns {Promise<any>}
+   * @param {string} attributeName Attribute name to read
+   * @param  {...any} args Additional arguments
+   * @returns {Promise<any>} Attribute value
    */
   async readAttribute(attributeName, ...args) {
     return await this.client.readAttributeOnReference(this.id, attributeName, ...args)
@@ -49,10 +45,9 @@ export default class Reference {
 
   /**
    * Reads an attribute from the reference using another reference as argument
-   *
-   * @param {string} attributeName
-   * @param  {...any} args
-   * @returns {Promise<any>}
+   * @param {string} attributeName Attribute name to read
+   * @param  {...any} args Additional arguments
+   * @returns {Promise<any>} Attribute value
    */
   async readAttributeWithReference(attributeName, ...args) {
     return await this.client.readAttributeOnReferenceWithReference(this.id, attributeName, ...args)
@@ -60,8 +55,7 @@ export default class Reference {
 
   /**
    * Serializes the reference and returns the result directly
-   *
-   * @returns {Promise<any>}
+   * @returns {Promise<any>} Parsed JSON representation
    */
   async serialize() {
     return await this.client.serializeReference(this.id)

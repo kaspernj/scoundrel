@@ -15,7 +15,7 @@ export default class WebSocket {
   close() { this.wss.close() }
 
   /**
-   * @param {import("ws").WebSocket} ws
+   * @param {import("ws").WebSocket} ws New WebSocket connection
    */
   onConnection = (ws) => {
     if (!this.onNewClientCallback) throw new Error("'onNewClient' hasn't been called")
@@ -24,7 +24,7 @@ export default class WebSocket {
   }
 
   /**
-   * @param {(client: import("./client.js").default) => void} callback
+   * @param {(client: import("./client.js").default) => void} callback Handler for new clients
    */
   onNewClient(callback) {
     if (!callback) throw new Error("No callback was given")

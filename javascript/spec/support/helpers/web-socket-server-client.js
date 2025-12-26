@@ -9,7 +9,6 @@ import {WebSocket, WebSocketServer} from "ws"
 /**
  * Spins up a WebSocket server/client pair, runs the provided callback, and
  * handles teardown even if the callback rejects.
- *
  * @param {(context: {
  *   client: Client,
  *   clientWebSocket: ClientWebSocket,
@@ -19,8 +18,8 @@ import {WebSocket, WebSocketServer} from "ws"
  *   ws: WebSocket,
  *   wss: WebSocketServer,
  *   port: number
- * }) => Promise<void>} callback
- * @param {{enableServerControl?: boolean, port?: number}} [options]
+ * }) => Promise<void>} callback Async test callback
+ * @param {{enableServerControl?: boolean, port?: number}} [options] Setup options
  */
 export async function runWithWebSocketServerClient(callback, options = {}) {
   const {enableServerControl = false, port = 0} = options
