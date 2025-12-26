@@ -1,0 +1,7 @@
+# Scoundrel
+
+## Development workflow
+
+- `npm run lint`
+- `npm run typecheck`
+- `npm run test`

@@ -355,7 +355,63 @@ export default class Client {
         }
 
         const scope = {...this._objects, ...this._classes}
+        const reservedIdentifiers = new Set([
+          "break",
+          "case",
+          "catch",
+          "class",
+          "const",
+          "continue",
+          "debugger",
+          "default",
+          "delete",
+          "do",
+          "else",
+          "export",
+          "extends",
+          "finally",
+          "for",
+          "function",
+          "if",
+          "import",
+          "in",
+          "instanceof",
+          "new",
+          "return",
+          "super",
+          "switch",
+          "this",
+          "throw",
+          "try",
+          "typeof",
+          "var",
+          "void",
+          "while",
+          "with",
+          "yield",
+          "let",
+          "enum",
+          "await",
+          "implements",
+          "package",
+          "protected",
+          "static",
+          "interface",
+          "private",
+          "public",
+          "eval"
+        ])
+
+        const isValidIdentifier = (name) =>
+          /^(?:[$_]|\p{ID_Start})(?:[$_]|\p{ID_Continue})*$/u.test(name) && !reservedIdentifiers.has(name)
+
         const scopeKeys = Object.keys(scope)
+        const invalidKeys = scopeKeys.filter((key) => !isValidIdentifier(key))
+
+        if (invalidKeys.length > 0) {
+          throw new Error(`Invalid registered identifier(s): ${invalidKeys.join(", ")}`)
+        }
+
         // Ensure registered objects/classes are available as locals inside the eval
         const evaluator = new Function("__evalString", ...scopeKeys, "return eval(__evalString)")
         const evalResult = evaluator(data.eval_string, ...scopeKeys.map((key) => scope[key]))
