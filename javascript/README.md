@@ -38,6 +38,16 @@ pythonWebSocketRunner.close()
 
 `Reference#serialize()` only supports JSON-safe values (strings, numbers, booleans, null, plain objects, and arrays). It throws an error if the value contains functions, symbols, bigints, class instances/non-plain objects, circular references, non-finite numbers, or other unsupported types.
 
+## Stack trace sanitization
+
+When a command fails, Scoundrel combines the server and client stacks into a single error. Some frames are filtered to keep the combined stack readable:
+
+- Frames from the WebSocket client library (`node_modules/ws`)
+- Node internals (`node:` URLs and `internal/` frames)
+- The leading `Error:` line from nested stacks
+
+Application frames, including paths that contain `/internal/` within your project, are preserved.
+
 ## Calling static methods on classes
 
 You can ask for a reference to a class (either globally available or registered with `registerClass`) and call its static methods:
