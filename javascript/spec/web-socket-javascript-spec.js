@@ -76,12 +76,15 @@ describe("scoundrel - web-socket - javascript", () => {
       await runWithWebSocketServerClient(
         async ({client, serverClient}) => {
           class TestGreeter {
-            /** @param {string} prefix */
+            /** @param {string} prefix Greeting prefix */
             constructor(prefix) {
               this.prefix = prefix
             }
 
-            /** @param {string} name */
+            /**
+             * @param {string} name Name to greet
+             * @returns {string} Greeting message
+             */
             greet(name) {
               return `${this.prefix} ${name}`
             }
@@ -117,7 +120,10 @@ describe("scoundrel - web-socket - javascript", () => {
       await runWithWebSocketServerClient(
         async ({client, serverClient}) => {
           class AsyncGreeter {
-            /** @param {string} name */
+            /**
+             * @param {string} name Name to greet
+             * @returns {Promise<string>} Greeting message
+             */
             async customMethod(name) {
               await Promise.resolve()
               return `Hello ${name}`
@@ -139,7 +145,11 @@ describe("scoundrel - web-socket - javascript", () => {
       await runWithWebSocketServerClient(
         async ({client, serverClient}) => {
           class TestMath {
-            /** @param {number} a @param {number} b */
+            /**
+             * @param {number} a First operand
+             * @param {number} b Second operand
+             * @returns {number} Sum of operands
+             */
             static add(a, b) {
               return a + b
             }

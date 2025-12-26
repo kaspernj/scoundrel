@@ -32,21 +32,21 @@ export default class WebSocket {
   }
 
   /**
-   * @param {(data: any) => void} callback
+   * @param {(data: any) => void} callback Handler for incoming commands
    */
   onCommand(callback) {
     this.onCommandCallback = callback
   }
 
   /**
-   * @param {Event} event
+   * @param {Event} event WebSocket error event
    */
   onSocketError = (event) => {
     logger.error(() => ["onSocketError", event])
   }
 
   /**
-   * @param {MessageEvent} event
+   * @param {MessageEvent} event WebSocket message event
    */
   onSocketMessage = (event) => {
     const data = JSON.parse(event.data)
@@ -61,14 +61,14 @@ export default class WebSocket {
   }
 
   /**
-   * @param {Event} event
+   * @param {Event} event WebSocket open event
    */
   onSocketOpen = (event) => {
     logger.log(() => ["onSocketOpen", event])
   }
 
   /**
-   * @param {Record<string, any>} data
+   * @param {Record<string, any>} data Payload to send
    */
   send(data) {
     const sendData = JSON.stringify(data)

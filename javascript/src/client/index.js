@@ -11,9 +11,8 @@ const logger = new Logger("Scoundrel Client")
 export default class Client {
   /**
    * Creates a new Scoundrel Client
-   *
    * @param {any} backend The backend connection (e.g., WebSocket)
-   * @param {{enableServerControl?: boolean}} [options]
+   * @param {{enableServerControl?: boolean}} [options] Client configuration options
    */
   constructor(backend, options = {}) {
     this.backend = backend
@@ -51,11 +50,10 @@ export default class Client {
 
   /**
    * Calls a method on a reference and returns the result directly
-   *
-   * @param {number} referenceId
-   * @param {string} methodName
-   * @param  {...any} args
-   * @returns {Promise<any>}
+   * @param {number} referenceId Reference identifier
+   * @param {string} methodName Method name to invoke
+   * @param  {...any} args Arguments to pass to the method
+   * @returns {Promise<any>} Result from the method call
    */
   async callMethodOnReference(referenceId, methodName, ...args) {
     const result = await this.sendCommand("call_method_on_reference", {
@@ -70,11 +68,10 @@ export default class Client {
 
   /**
    * Calls a method on a reference and returns a new reference
-   *
-   * @param {number} referenceId
-   * @param {string} methodName
-   * @param  {...any} args
-   * @returns {Promise<Reference>}
+   * @param {number} referenceId Reference identifier
+   * @param {string} methodName Method name to invoke
+   * @param  {...any} args Arguments to pass to the method
+   * @returns {Promise<Reference>} Reference to the return value
    */
   async callMethodOnReferenceWithReference(referenceId, methodName, ...args) {
     const result = await this.sendCommand("call_method_on_reference", {
@@ -90,9 +87,8 @@ export default class Client {
 
   /**
    * Evaluates a string and returns a new reference
-   *
-   * @param {string} evalString
-   * @returns {Promise<Reference>}
+   * @param {string} evalString Code to evaluate
+   * @returns {Promise<Reference>} Reference to the evaluated value
    */
   async evalWithReference(evalString) {
     const result = await this.sendCommand("eval", {
@@ -111,9 +107,8 @@ export default class Client {
 
   /**
    * Imports a module and returns a reference to it
-   *
-   * @param {string} importName
-   * @returns {Promise<Reference>}
+   * @param {string} importName Module name to import
+   * @returns {Promise<Reference>} Reference to the module
    */
   async import(importName) {
     const result = await this.sendCommand("import", {
@@ -132,9 +127,8 @@ export default class Client {
 
   /**
    * Gets a registered object by name
-   *
-   * @param {string} objectName
-   * @returns {Promise<Reference>}
+   * @param {string} objectName Registered object name
+   * @returns {Promise<Reference>} Reference to the object
    */
   async getObject(objectName) {
     const result = await this.sendCommand("get_object", {
@@ -150,10 +144,9 @@ export default class Client {
 
   /**
    * Spawns a new reference to an object
-   *
-   * @param {string} className
-   * @param  {...any} args
-   * @returns {Promise<Reference>}
+   * @param {string} className Class name to construct
+   * @param  {...any} args Constructor arguments
+   * @returns {Promise<Reference>} Reference to the new instance
    */
   async newObjectWithReference(className, ...args) {
     const result = await this.sendCommand("new_object_with_reference", {
@@ -172,8 +165,8 @@ export default class Client {
 
   /**
    * Checks if the input is a plain object
-   * @param {any} input
-   * @returns {boolean}
+   * @param {any} input Value to inspect
+   * @returns {boolean} True when the value is a plain object
    */
   isPlainObject(input) {
     if (input && typeof input === "object" && !Array.isArray(input)) {
@@ -185,12 +178,12 @@ export default class Client {
 
   /**
    * Handles an incoming command from the backend
-   * @param {object} args
-   * @param {string} args.command
-   * @param {number} args.command_id
-   * @param {any} args.data
-   * @param {string} [args.error]
-   * @param {string} [args.errorStack]
+   * @param {object} args Command payload
+   * @param {string} args.command Command name
+   * @param {number} args.command_id Command identifier
+   * @param {any} args.data Command data
+   * @param {string} [args.error] Error message from the backend
+   * @param {string} [args.errorStack] Error stack from the backend
    */
   onCommand = ({command, command_id: commandID, data, error, errorStack, ...restArgs}) => {
     logger.log(() => ["onCommand", {command, commandID, data, error, errorStack, restArgs}])
@@ -443,9 +436,8 @@ export default class Client {
 
   /**
    * Parases an argument for sending to the server
-   *
-   * @param {any} arg
-   * @returns {any}
+   * @param {any} arg Argument to serialize for transport
+   * @returns {any} Serialized argument payload
    */
   parseArg(arg) {
     if (Array.isArray(arg)) {
@@ -473,10 +465,9 @@ export default class Client {
 
   /**
    * Reads an attribute on a reference and returns a new reference
-   *
-   * @param {number} referenceId
-   * @param {string} attributeName
-   * @returns {Promise<Reference>}
+   * @param {number} referenceId Reference identifier
+   * @param {string} attributeName Attribute name to read
+   * @returns {Promise<Reference>} Reference to the attribute value
    */
   async readAttributeOnReferenceWithReference(referenceId, attributeName) {
     const result = await this.sendCommand("read_attribute", {
@@ -491,10 +482,9 @@ export default class Client {
 
   /**
    * Reads an attribute on a reference and returns the result directly
-   *
-   * @param {number} referenceId
-   * @param {string} attributeName
-   * @returns {Promise<any>}
+   * @param {number} referenceId Reference identifier
+   * @param {string} attributeName Attribute name to read
+   * @returns {Promise<any>} Attribute value
    */
   async readAttributeOnReference(referenceId, attributeName) {
     const result = await this.sendCommand("read_attribute", {
@@ -507,9 +497,8 @@ export default class Client {
 
   /**
    * Registers a class by name
-   *
-   * @param {string} className
-   * @param {any} classInstance
+   * @param {string} className Class name to register
+   * @param {any} classInstance Class constructor or instance
    */
   registerClass(className, classInstance) {
     if (className in this._classes) throw new Error(`Class already exists: ${className}`)
@@ -519,8 +508,7 @@ export default class Client {
 
   /**
    * Unregisters a class by name
-   *
-   * @param {string} className
+   * @param {string} className Class name to remove
    */
   unregisterClass(className) {
     if (!(className in this._classes)) throw new Error(`Class does not exist: ${className}`)
@@ -530,9 +518,8 @@ export default class Client {
 
   /**
    * Gets a registered class by name
-   *
-   * @param {string} className
-   * @returns {any}
+   * @param {string} className Class name to look up
+   * @returns {any} Registered class or undefined
    */
   _getRegisteredClass(className) {
     return this._classes[className]
@@ -540,9 +527,8 @@ export default class Client {
 
   /**
    * Gets a registered class by name
-   *
-   * @param {string} className
-   * @returns {any}
+   * @param {string} className Class name to look up
+   * @returns {any} Registered class or undefined
    */
   getClass(className) {
     return this._classes[className]
@@ -550,9 +536,8 @@ export default class Client {
 
   /**
    * Registers an object by name
-   *
-   * @param {string} objectName
-   * @param {any} objectInstance
+   * @param {string} objectName Object name to register
+   * @param {any} objectInstance Object instance
    */
   registerObject(objectName, objectInstance) {
     if (objectName in this._objects) throw new Error(`Object already exists: ${objectName}`)
@@ -562,8 +547,7 @@ export default class Client {
 
   /**
    * Unregisters an object by name
-   *
-   * @param {string} objectName
+   * @param {string} objectName Object name to remove
    */
   unregisterObject(objectName) {
     if (!(objectName in this._objects)) throw new Error(`Object does not exist: ${objectName}`)
@@ -573,9 +557,8 @@ export default class Client {
 
   /**
    * Gets a registered object by name
-   *
-   * @param {string} objectName
-   * @returns {any}
+   * @param {string} objectName Object name to look up
+   * @returns {any} Registered object or undefined
    */
   _getRegisteredObject(objectName) {
     return this._objects[objectName]
@@ -583,8 +566,8 @@ export default class Client {
 
   /**
    * Responds to a command from the backend
-   * @param {number} commandId
-   * @param {any} data
+   * @param {number} commandId Command identifier
+   * @param {any} data Response payload
    */
   respondToCommand(commandId, data) {
     this.send({command: "command_response", command_id: commandId, data: {command_id: commandId, data}})
@@ -592,9 +575,9 @@ export default class Client {
 
   /**
    * Sends a command to the backend and returns a promise that resolves with the response
-   * @param {string} command
-   * @param {any} data
-   * @returns {Promise<any>}
+   * @param {string} command Command name
+   * @param {any} data Command payload
+   * @returns {Promise<any>} Response from the backend
    */
   sendCommand(command, data) {
     return new Promise((resolve, reject) => {
@@ -616,7 +599,7 @@ export default class Client {
 
   /**
    * Sends data to the backend
-   * @param {any} data
+   * @param {any} data Payload to send
    */
   send(data) {
     this.backend.send(data)
@@ -624,9 +607,8 @@ export default class Client {
 
   /**
    * Serializes a reference and returns the result directly
-   *
-   * @param {number} referenceId
-   * @returns {Promise<any>}
+   * @param {number} referenceId Reference identifier
+   * @returns {Promise<any>} Parsed JSON representation
    */
   async serializeReference(referenceId) {
     const json = await this.sendCommand("serialize_reference", {reference_id: referenceId})
@@ -636,9 +618,8 @@ export default class Client {
 
   /**
    * Spawns a new reference to an object
-   *
-   * @param {string} id
-   * @returns {Reference}
+   * @param {string} id Reference identifier
+   * @returns {Reference} Reference instance
    */
   spawnReference(id) {
     const reference = new Reference(this, id)

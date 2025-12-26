@@ -13,21 +13,21 @@ export default class WebSocketClient {
   }
 
   /**
-   * @param {(data: any) => void} callback
+   * @param {(data: any) => void} callback Handler for incoming commands
    */
   onCommand(callback) {
     this.onCommandCallback = callback
   }
 
   /**
-   * @param {Error} error
+   * @param {Error} error WebSocket error
    */
   onError = (error) => {
     console.error("WebSocketClient error", error)
   }
 
   /**
-   * @param {string} rawData
+   * @param {string} rawData Raw message payload
    */
   onMessage = (rawData) => {
     const data = JSON.parse(rawData)
@@ -38,7 +38,7 @@ export default class WebSocketClient {
   }
 
   /**
-   * @param {any} data
+   * @param {any} data Payload to send
    */
   async send(data) {
     await this.ws.send(JSON.stringify(data))

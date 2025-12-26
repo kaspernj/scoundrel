@@ -23,15 +23,15 @@ export default class ScoundrelServer {
     this.onNewClient = this.onNewClientEventEmitter.connector()
   }
 
-  /** @returns {void} */
+  /** @returns {void} No return value */
   close() { this.backend.close() }
 
-  /** @returns {Client[]} */
+  /** @returns {Client[]} Connected clients */
   getClients() { return this.clients }
 
   /**
-   * @param {import("./connections/web-socket/client.js").default} clientBackend
-   * @returns {void}
+   * @param {import("./connections/web-socket/client.js").default} clientBackend Backend client connection
+   * @returns {void} No return value
    */
   onNewClientFromBackend = (clientBackend) => {
     const client = new Client(clientBackend, {enableServerControl: true})
