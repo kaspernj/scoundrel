@@ -403,7 +403,7 @@ export default class Client {
         ])
 
         const isValidIdentifier = (name) =>
-          /^(?:[$_]|\\p{ID_Start})(?:[$_]|\\p{ID_Continue})*$/u.test(name) && !reservedIdentifiers.has(name)
+          /^(?:[$_]|\p{ID_Start})(?:[$_]|\p{ID_Continue})*$/u.test(name) && !reservedIdentifiers.has(name)
 
         const scopeKeys = Object.keys(scope)
         const invalidKeys = scopeKeys.filter((key) => !isValidIdentifier(key))
