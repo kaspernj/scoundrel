@@ -403,9 +403,15 @@ export default class Client {
         ])
 
         const isValidIdentifier = (name) =>
-          /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(name) && !reservedIdentifiers.has(name)
+          /^(?:[$_]|\\p{ID_Start})(?:[$_]|\\p{ID_Continue})*$/u.test(name) && !reservedIdentifiers.has(name)
 
-        const scopeKeys = Object.keys(scope).filter((key) => isValidIdentifier(key))
+        const scopeKeys = Object.keys(scope)
+        const invalidKeys = scopeKeys.filter((key) => !isValidIdentifier(key))
+
+        if (invalidKeys.length > 0) {
+          throw new Error(`Invalid registered identifier(s): ${invalidKeys.join(", ")}`)
+        }
+
         // Ensure registered objects/classes are available as locals inside the eval
         const evaluator = new Function("__evalString", ...scopeKeys, "return eval(__evalString)")
         const evalResult = evaluator(data.eval_string, ...scopeKeys.map((key) => scope[key]))
