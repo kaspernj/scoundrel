@@ -217,7 +217,8 @@ export default class Client {
               .filter((line) => line)
               .filter((line) => !/node_modules\/ws/.test(line))
               .filter((line) => !/(?:^|\()node:/.test(line))
-              .filter((line) => !/(?:^|[\\/])internal\//.test(line))
+              .filter((line) => !/(?:^|\()node:internal\//.test(line))
+              .filter((line) => !/(?:^|\bat\s)internal\//.test(line))
               .filter((line) => !line.startsWith("Error:"))
           }
 
