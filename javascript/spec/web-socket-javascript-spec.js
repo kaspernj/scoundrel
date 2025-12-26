@@ -99,6 +99,22 @@ describe("scoundrel - web-socket - javascript", () => {
       )
     })
 
+    it("ignores invalid scope names and preserves eval inside evalWithReference", async () => {
+      await runWithWebSocketServerClient(
+        async ({client, serverClient}) => {
+          client.registerObject("bad-name", {value: 123})
+          client.registerObject("eval", {value: "shadow"})
+          client.registerObject("this", {value: "also shadow"})
+
+          const evaluated = await serverClient.evalWithReference("(() => eval('2 + 2'))()")
+          const result = await evaluated.serialize()
+
+          expect(result).toEqual(4)
+        },
+        {enableServerControl: true}
+      )
+    })
+
     it("awaits async methods when calling them", async () => {
       await runWithWebSocketServerClient(
         async ({client, serverClient}) => {
