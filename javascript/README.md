@@ -25,13 +25,51 @@ const client = new Client(clientWebSocket)
 
 const math = await client.import("math")
 const pi = await math.readAttributeWithReference("pi")
-const cosOfPi = await math.callMethodWithReference("cos", pi)
+const cosOfPi = await math.callMethod("cos", {returnReference: true}, pi)
 const result = await cosOfPi.serialize()
 
 expect(result).toEqual(-1)
 
 client.close()
 pythonWebSocketRunner.close()
+```
+
+## Client and reference examples
+
+Create remote objects, call methods, and fetch attributes:
+
+```js
+const arrayRef = await client.newObjectWithReference("Array")
+await arrayRef.callMethod("push", "one", "two")
+const joined = await arrayRef.callMethod("join", ", ")
+expect(joined).toEqual("one, two")
+
+const lengthRef = await arrayRef.callMethod("push", {returnReference: true}, "three")
+const length = await lengthRef.serialize()
+expect(length).toEqual(3)
+```
+
+Read attributes directly or as references:
+
+```js
+const math = await client.import("math")
+const piRef = await math.readAttributeWithReference("pi")
+const pi = await piRef.serialize()
+
+const e = await math.readAttribute("E")
+expect([pi, e].every((value) => typeof value === "number")).toEqual(true)
+```
+
+Fetch globally available or registered objects:
+
+```js
+client.registerObject("config", {mode: "test"})
+
+const configRef = await client.getObject("config")
+const config = await configRef.serialize()
+expect(config).toEqual({mode: "test"})
+
+client.unregisterObject("config")
 ```
 
 ## Serialization
@@ -82,7 +120,13 @@ const client = new Client(clientWebSocket, {enableServerControl: false})
 // equivalent to: new Client(clientWebSocket)
 ```
 
-Registered objects and classes are available inside `evalWithReference`:
+You can also enable it after construction:
+
+```js
+client.enableServerControl()
+```
+
+Registered objects and classes are available inside `eval`:
 
 ```js
 const client = new Client(clientWebSocket, {enableServerControl: true})
@@ -101,15 +145,28 @@ client.registerClass("TestGreeter", TestGreeter)
 client.registerObject("testSettings", {prefix: "Hello"})
 
 const serverClient = server.getClients()[0] // from your ScoundrelServer instance
-const greetingRef = await serverClient.evalWithReference("(() => { const greeter = new TestGreeter(testSettings.prefix); return greeter.greet('World') })()")
+const greetingRef = await serverClient.eval("(() => { const greeter = new TestGreeter(testSettings.prefix); return greeter.greet('World') })()")
 const greeting = await greetingRef.serialize()
 
 expect(greeting).toEqual("Hello World")
 ```
 
-You can unregister classes or objects to remove them from server-side lookups and `evalWithReference` scope:
+You can unregister classes or objects to remove them from server-side lookups and `eval` scope:
 
 ```js
 client.unregisterClass("TestGreeter")
 client.unregisterObject("testSettings")
+```
+
+`eval` defaults to returning a reference, but you can request the raw result:
+
+```js
+const result = await serverClient.eval({returnResult: true}, "(() => 1 + 1)()")
+expect(result).toEqual(2)
+```
+
+Use `eval` with `returnReference` if you need to be explicit:
+
+```js
+const greetingRef = await serverClient.eval({returnReference: true}, "(() => { return 'Hello' })()")
 ```

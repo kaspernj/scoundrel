@@ -30,6 +30,37 @@ describe("scoundrel - web-socket - javascript", () => {
       })
     })
 
+    it("returns a reference when callMethod returnReference is true", async () => {
+      await runWithWebSocketServerClient(async ({client}) => {
+        const stringObject = await client.newObjectWithReference("Array")
+
+        const lengthRef = await stringObject.callMethod("push", {returnReference: true}, "test1")
+        const length = await lengthRef.serialize()
+
+        expect(length).toEqual(1)
+      })
+    })
+
+    it("returns a result when callMethod returnResult is true", async () => {
+      await runWithWebSocketServerClient(async ({client}) => {
+        const stringObject = await client.newObjectWithReference("Array")
+
+        const length = await stringObject.callMethod("push", {returnResult: true}, "test1")
+
+        expect(length).toEqual(1)
+      })
+    })
+
+    it("rejects unknown callMethod options", async () => {
+      await runWithWebSocketServerClient(async ({client}) => {
+        const stringObject = await client.newObjectWithReference("Array")
+
+        await expectAsync(
+          stringObject.callMethod("push", {returnReference: true, unknownOption: true}, "test1")
+        ).toBeRejectedWithError("Unknown callMethodOnReference options: unknownOption")
+      })
+    })
+
     it("handles errors from method calls", async () => {
       await runWithWebSocketServerClient(async ({client}) => {
         const stringObject = await client.newObjectWithReference("Array")
@@ -60,7 +91,7 @@ describe("scoundrel - web-socket - javascript", () => {
     it("lets the server eval code on the client", async () => {
       await runWithWebSocketServerClient(
         async ({serverClient}) => {
-          const evaluatedArray = await serverClient.evalWithReference("(() => { const values = ['from client eval']; values.push('more values'); return values })()")
+          const evaluatedArray = await serverClient.eval("(() => { const values = ['from client eval']; values.push('more values'); return values })()")
 
           await evaluatedArray.callMethod("push", "after eval")
 
@@ -72,7 +103,7 @@ describe("scoundrel - web-socket - javascript", () => {
       )
     })
 
-    it("makes registered objects and classes available inside evalWithReference", async () => {
+    it("makes registered objects and classes available inside eval", async () => {
       await runWithWebSocketServerClient(
         async ({client, serverClient}) => {
           class TestGreeter {
@@ -93,7 +124,7 @@ describe("scoundrel - web-socket - javascript", () => {
           client.registerClass("TestGreeter", TestGreeter)
           client.registerObject("testSettings", {prefix: "Hello"})
 
-          const evaluated = await serverClient.evalWithReference("(() => { const greeter = new TestGreeter(testSettings.prefix); return greeter.greet('World') })()")
+          const evaluated = await serverClient.eval("(() => { const greeter = new TestGreeter(testSettings.prefix); return greeter.greet('World') })()")
           const result = await evaluated.serialize()
 
           expect(result).toEqual("Hello World")
@@ -102,15 +133,63 @@ describe("scoundrel - web-socket - javascript", () => {
       )
     })
 
-    it("rejects invalid scope names so evalWithReference fails loudly", async () => {
+    it("rejects invalid scope names so eval fails loudly", async () => {
       await runWithWebSocketServerClient(
         async ({client, serverClient}) => {
           client.registerObject("bad-name", {value: 123})
           client.registerObject("eval", {value: "shadow"})
           client.registerObject("this", {value: "also shadow"})
-          await expectAsync(serverClient.evalWithReference("(() => 1 + 1)()")).toBeRejectedWithError(
+          await expectAsync(serverClient.eval("(() => 1 + 1)()")).toBeRejectedWithError(
             "Invalid registered identifier(s): bad-name, eval, this"
           )
+        },
+        {enableServerControl: true}
+      )
+    })
+
+    it("returns results when eval returnResult is true", async () => {
+      await runWithWebSocketServerClient(
+        async ({serverClient}) => {
+          const result = await serverClient.eval({returnResult: true}, "(() => 1 + 1)()")
+
+          expect(result).toEqual(2)
+        },
+        {enableServerControl: true}
+      )
+    })
+
+    it("returns references when eval returnReference is true", async () => {
+      await runWithWebSocketServerClient(
+        async ({serverClient}) => {
+          const evaluated = await serverClient.eval({returnReference: true}, "(() => ({value: 123}))()")
+          const result = await evaluated.serialize()
+
+          expect(result).toEqual({value: 123})
+        },
+        {enableServerControl: true}
+      )
+    })
+
+    it("rejects unknown eval options", async () => {
+      await runWithWebSocketServerClient(
+        async ({serverClient}) => {
+          await expectAsync(serverClient.eval({unknownOption: true}, "(() => 1 + 1)()")).toBeRejectedWithError(
+            "Unknown eval options: unknownOption"
+          )
+        },
+        {enableServerControl: true}
+      )
+    })
+
+    it("warns when using evalWithReference", async () => {
+      await runWithWebSocketServerClient(
+        async ({serverClient}) => {
+          const warnSpy = spyOn(console, "warn")
+          const evaluated = await serverClient.evalWithReference("(() => ({value: 10}))()")
+          const result = await evaluated.serialize()
+
+          expect(result).toEqual({value: 10})
+          expect(warnSpy).toHaveBeenCalledWith("Scoundrel Client", "evalWithReference is deprecated; use eval instead.")
         },
         {enableServerControl: true}
       )
