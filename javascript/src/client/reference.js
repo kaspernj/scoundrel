@@ -15,12 +15,36 @@ export default class Reference {
 
   /**
    * Calls a method on the reference
+   * @overload
    * @param {string} methodName Method name to invoke
    * @param  {...any} args Arguments to pass to the method
    * @returns {Promise<any>} Result from the method call
    */
-  async callMethod(methodName, ...args) {
-    return await this.client.callMethodOnReference(this.id, methodName, ...args)
+  /**
+   * Calls a method on the reference
+   * @overload
+   * @param {string} methodName Method name to invoke
+   * @param {{returnReference?: boolean, returnResult?: false}} options Options for the call
+   * @param  {...any} args Arguments to pass to the method
+   * @returns {Promise<Reference>} Reference to the return value
+   */
+  /**
+   * Calls a method on the reference
+   * @overload
+   * @param {string} methodName Method name to invoke
+   * @param {{returnResult: true, returnReference?: false}} options Options for the call
+   * @param  {...any} args Arguments to pass to the method
+   * @returns {Promise<any>} Result from the method call
+   */
+  /**
+   * Calls a method on the reference
+   * @param {string} methodName Method name to invoke
+   * @param {any} [optionsOrArg] Options for the call or first argument
+   * @param  {...any} args Arguments to pass to the method
+   * @returns {Promise<Reference | any>} Result or reference from the method call
+   */
+  async callMethod(methodName, optionsOrArg, ...args) {
+    return await this.client.callMethodOnReference(this.id, methodName, optionsOrArg, ...args)
   }
 
   /**
@@ -30,7 +54,7 @@ export default class Reference {
    * @returns {Promise<any>} Result from the method call
    */
   async callMethodWithReference(methodName, ...args) {
-    return await this.client.callMethodOnReferenceWithReference(this.id, methodName, ...args)
+    return await this.client.callMethodOnReference(this.id, methodName, {returnReference: true}, ...args)
   }
 
   /**

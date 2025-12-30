@@ -8,6 +8,11 @@ const logger = new Logger("Scoundrel Client")
 
 // logger.setDebug(true)
 
+/**
+ * @typedef {{returnReference?: boolean, returnResult?: boolean}} ReturnOptions
+ * @typedef {ReturnOptions & {returnResult?: false}} ReturnReferenceOptions
+ * @typedef {ReturnOptions & {returnResult: true, returnReference?: false}} ReturnResultOptions
+ */
 export default class Client {
   /**
    * Creates a new Scoundrel Client
@@ -50,18 +55,90 @@ export default class Client {
 
   /**
    * Calls a method on a reference and returns the result directly
+   * @overload
    * @param {number} referenceId Reference identifier
    * @param {string} methodName Method name to invoke
    * @param  {...any} args Arguments to pass to the method
    * @returns {Promise<any>} Result from the method call
    */
-  async callMethodOnReference(referenceId, methodName, ...args) {
+  /**
+   * Calls a method on a reference and returns a new reference
+   * @overload
+   * @param {number} referenceId Reference identifier
+   * @param {string} methodName Method name to invoke
+   * @param {ReturnReferenceOptions} options Options for the call
+   * @param  {...any} args Arguments to pass to the method
+   * @returns {Promise<Reference>} Reference to the returned value
+   */
+  /**
+   * Calls a method on a reference and returns the result directly
+   * @overload
+   * @param {number} referenceId Reference identifier
+   * @param {string} methodName Method name to invoke
+   * @param {ReturnResultOptions} options Options for the call
+   * @param  {...any} args Arguments to pass to the method
+   * @returns {Promise<any>} Result from the method call
+   */
+  /**
+   * Calls a method on a reference and returns the result directly
+   * @param {number} referenceId Reference identifier
+   * @param {string} methodName Method name to invoke
+   * @param {ReturnOptions | any} [optionsOrArg] Options for the call or first argument
+   * @param  {...any} args Arguments to pass to the method
+   * @returns {Promise<Reference | any>} Result or reference from the method call
+   */
+  async callMethodOnReference(referenceId, methodName, optionsOrArg, ...args) {
+    const allowedOptions = new Set(["returnReference", "returnResult"])
+    /** @type {ReturnOptions | undefined} */
+    let options
+    /** @type {any[]} */
+    let methodArgs
+
+    if (typeof optionsOrArg === "undefined") {
+      methodArgs = []
+    } else if (this.isPlainObject(optionsOrArg)) {
+      const optionKeys = Object.keys(optionsOrArg)
+      const hasOptionKey = optionKeys.some((key) => allowedOptions.has(key))
+
+      if (hasOptionKey) {
+        const unknownOptions = optionKeys.filter((key) => !allowedOptions.has(key))
+        if (unknownOptions.length > 0) {
+          throw new Error(`Unknown callMethodOnReference options: ${unknownOptions.join(", ")}`)
+        }
+
+        options = /** @type {ReturnOptions} */ (optionsOrArg)
+        methodArgs = args
+      } else {
+        methodArgs = [optionsOrArg, ...args]
+      }
+    } else {
+      methodArgs = [optionsOrArg, ...args]
+    }
+
+    const returnReference = options?.returnReference === true
+    const returnResult = options?.returnResult === true
+
+    if (returnReference && returnResult) {
+      throw new Error("callMethodOnReference options returnReference and returnResult cannot both be true")
+    }
+
+    const withReference = returnReference
     const result = await this.sendCommand("call_method_on_reference", {
-      args: this.parseArg(args),
+      args: this.parseArg(methodArgs),
       method_name: methodName,
       reference_id: referenceId,
-      with: "result"
+      with: withReference ? "reference" : "result"
     })
+
+    if (!result) throw new Error("Blank result given")
+
+    if (withReference) {
+      const objectId = result.response
+
+      if (!objectId) throw new Error(`No object ID given in result: ${JSON.stringify(result)}`)
+
+      return this.spawnReference(objectId)
+    }
 
     return result.response
   }
@@ -74,15 +151,88 @@ export default class Client {
    * @returns {Promise<Reference>} Reference to the return value
    */
   async callMethodOnReferenceWithReference(referenceId, methodName, ...args) {
-    const result = await this.sendCommand("call_method_on_reference", {
-      args: this.parseArg(args),
-      method_name: methodName,
-      reference_id: referenceId,
-      with: "reference"
-    })
-    const id = result.response
+    console.warn("Scoundrel Client", "callMethodOnReferenceWithReference is deprecated; use callMethodOnReference with returnReference instead.")
+    return this.callMethodOnReference(referenceId, methodName, {returnReference: true}, ...args)
+  }
 
-    return this.spawnReference(id)
+  /**
+   * Evaluates a string and returns a reference or result
+   * @overload
+   * @param {string} evalString Code to evaluate
+   * @returns {Promise<Reference>} Reference to the evaluated value
+   */
+  /**
+   * Evaluates a string and returns a reference or result
+   * @overload
+   * @param {ReturnReferenceOptions} options Eval options
+   * @param {string} evalString Code to evaluate
+   * @returns {Promise<Reference>} Reference to the evaluated value
+   */
+  /**
+   * Evaluates a string and returns a reference or result
+   * @overload
+   * @param {ReturnResultOptions} options Eval options
+   * @param {string} evalString Code to evaluate
+   * @returns {Promise<any>} Evaluated result
+   */
+  /**
+   * Evaluates a string and returns a reference or result
+   * @param {string | ReturnOptions} optionsOrEvalString Options or code to evaluate
+   * @param {string} [evalString] Code to evaluate
+   * @returns {Promise<Reference | any>} Reference or evaluated result
+   */
+  async eval(optionsOrEvalString, evalString) {
+    const allowedOptions = new Set(["returnReference", "returnResult"])
+    /** @type {ReturnOptions} */
+    let options = {}
+    /** @type {string | undefined} */
+    let targetEvalString = evalString
+
+    if (typeof evalString === "undefined") {
+      if (this.isPlainObject(optionsOrEvalString)) {
+        throw new Error("eval requires an eval string when options are provided")
+      }
+
+      targetEvalString = /** @type {string} */ (optionsOrEvalString)
+    } else {
+      options = /** @type {ReturnOptions} */ (optionsOrEvalString ?? {})
+
+      if (!this.isPlainObject(options)) {
+        throw new Error("eval options must be a plain object")
+      }
+    }
+
+    const unknownOptions = Object.keys(options).filter((key) => !allowedOptions.has(key))
+    if (unknownOptions.length > 0) {
+      throw new Error(`Unknown eval options: ${unknownOptions.join(", ")}`)
+    }
+
+    const returnReference = options.returnReference === true
+    const returnResult = options.returnResult === true
+
+    if (returnReference && returnResult) {
+      throw new Error("eval options returnReference and returnResult cannot both be true")
+    }
+
+    const withReference = returnReference || !returnResult
+    const result = await this.sendCommand("eval", {
+      eval_string: targetEvalString,
+      with_reference: withReference
+    })
+
+    if (!result) throw new Error("Blank result given")
+
+    if (withReference) {
+      const objectId = result.object_id
+
+      if (!objectId) throw new Error(`No object ID given in result: ${JSON.stringify(result)}`)
+
+      return this.spawnReference(objectId)
+    }
+
+    if (!("response" in result)) throw new Error(`No response given in result: ${JSON.stringify(result)}`)
+
+    return result.response
   }
 
   /**
@@ -91,18 +241,8 @@ export default class Client {
    * @returns {Promise<Reference>} Reference to the evaluated value
    */
   async evalWithReference(evalString) {
-    const result = await this.sendCommand("eval", {
-      eval_string: evalString,
-      with_reference: true
-    })
-
-    if (!result) throw new Error("Blank result given")
-
-    const objectId = result.object_id
-
-    if (!objectId) throw new Error(`No object ID given in result: ${JSON.stringify(result)}`)
-
-    return this.spawnReference(objectId)
+    console.warn("Scoundrel Client", "evalWithReference is deprecated; use eval instead.")
+    return this.eval({returnReference: true}, evalString)
   }
 
   /**
