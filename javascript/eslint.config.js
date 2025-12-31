@@ -11,6 +11,9 @@ export default defineConfig([
     files: ["**/*.{js,mjs,cjs}"],
     plugins: {js, jsdoc},
     extends: ["js/recommended", "jsdoc/recommended"],
+    rules: {
+      "jsdoc/reject-any-type": "off"
+    },
     languageOptions: {
       globals: {
         ...globals.browser,

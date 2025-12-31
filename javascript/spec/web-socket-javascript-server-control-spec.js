@@ -5,9 +5,9 @@ import {runWithWebSocketServerClient} from "./support/helpers/web-socket-server-
 describe("scoundrel - web-socket - javascript - server control", () => {
   describe("server control disabled", () => {
     it("rejects server control when not enabled on the client", async () => {
-      await runWithWebSocketServerClient(async ({serverClient}) => {
-        await expectAsync(serverClient.newObjectWithReference("Array")).toBeRejectedWithError("Server control is disabled")
-      })
+        await runWithWebSocketServerClient(async ({serverClient}) => {
+          await expectAsync(serverClient.newObjectReference("Array")).toBeRejectedWithError("Server control is disabled")
+        })
     })
   })
 
@@ -17,9 +17,9 @@ describe("scoundrel - web-socket - javascript - server control", () => {
         async ({serverClient}) => {
           const evaluatedArray = await serverClient.eval("(() => { const values = ['from client eval']; values.push('more values'); return values })()")
 
-          await evaluatedArray.callMethod("push", "after eval")
+          await evaluatedArray.push("after eval")
 
-          const result = await evaluatedArray.serialize()
+          const result = await evaluatedArray.__serialize()
 
           expect(result).toEqual(["from client eval", "more values", "after eval"])
         },
@@ -48,8 +48,9 @@ describe("scoundrel - web-socket - javascript - server control", () => {
           client.registerClass("TestGreeter", TestGreeter)
           client.registerObject("testSettings", {prefix: "Hello"})
 
-          const evaluated = await serverClient.eval("(() => { const greeter = new TestGreeter(testSettings.prefix); return greeter.greet('World') })()")
-          const result = await evaluated.serialize()
+          const result = await serverClient.evalResult(
+            "(() => { const greeter = new TestGreeter(testSettings.prefix); return greeter.greet('World') })()"
+          )
 
           expect(result).toEqual("Hello World")
         },
@@ -71,10 +72,10 @@ describe("scoundrel - web-socket - javascript - server control", () => {
       )
     })
 
-    it("returns results when eval result is true", async () => {
+    it("returns results when evalResult is used", async () => {
       await runWithWebSocketServerClient(
         async ({serverClient}) => {
-          const result = await serverClient.eval({result: true}, "(() => 1 + 1)()")
+          const result = await serverClient.evalResult("(() => 1 + 1)()")
 
           expect(result).toEqual(2)
         },
@@ -82,38 +83,13 @@ describe("scoundrel - web-socket - javascript - server control", () => {
       )
     })
 
-    it("returns references when eval reference is true", async () => {
+    it("returns references when evalReference is used", async () => {
       await runWithWebSocketServerClient(
         async ({serverClient}) => {
-          const evaluated = await serverClient.eval({reference: true}, "(() => ({value: 123}))()")
+          const evaluated = await serverClient.evalReference("(() => ({value: 123}))()")
           const result = await evaluated.serialize()
 
           expect(result).toEqual({value: 123})
-        },
-        {enableServerControl: true}
-      )
-    })
-
-    it("rejects unknown eval options", async () => {
-      await runWithWebSocketServerClient(
-        async ({serverClient}) => {
-          await expectAsync(serverClient.eval(/** @type {any} */ ({unknownOption: true}), "(() => 1 + 1)()")).toBeRejectedWithError(
-            "Unknown eval options: unknownOption"
-          )
-        },
-        {enableServerControl: true}
-      )
-    })
-
-    it("warns when using evalWithReference", async () => {
-      await runWithWebSocketServerClient(
-        async ({serverClient}) => {
-          const warnSpy = spyOn(console, "warn")
-          const evaluated = await serverClient.evalWithReference("(() => ({value: 10}))()")
-          const result = await evaluated.serialize()
-
-          expect(result).toEqual({value: 10})
-          expect(warnSpy).toHaveBeenCalledWith("Scoundrel Client", "evalWithReference is deprecated; use eval instead.")
         },
         {enableServerControl: true}
       )
@@ -135,8 +111,8 @@ describe("scoundrel - web-socket - javascript - server control", () => {
 
           client.registerClass("AsyncGreeter", AsyncGreeter)
 
-          const reference = await serverClient.newObjectWithReference("AsyncGreeter")
-          const greeting = await reference.callMethod("customMethod", "World")
+          const reference = await serverClient.newObjectReference("AsyncGreeter")
+          const greeting = await reference.callMethodResult("customMethod", "World")
 
           expect(greeting).toEqual("Hello World")
         },
@@ -161,19 +137,19 @@ describe("scoundrel - web-socket - javascript - server control", () => {
           client.registerClass("TestMath", TestMath)
           client.registerObject("testSettings", {value: 42})
 
-          const mathRef = await serverClient.getObject("TestMath")
-          const sum = await mathRef.callMethod("add", 1, 2)
+          const mathRef = await serverClient.getObjectReference("TestMath")
+          const sum = await mathRef.callMethodResult("add", 1, 2)
           expect(sum).toEqual(3)
 
-          const settingsRef = await serverClient.getObject("testSettings")
+          const settingsRef = await serverClient.getObjectReference("testSettings")
           const settings = await settingsRef.serialize()
           expect(settings).toEqual({value: 42})
 
           client.unregisterClass("TestMath")
           client.unregisterObject("testSettings")
 
-          await expectAsync(serverClient.getObject("TestMath")).toBeRejectedWithError("No such object: TestMath")
-          await expectAsync(serverClient.getObject("testSettings")).toBeRejectedWithError("No such object: testSettings")
+          await expectAsync(serverClient.getObjectReference("TestMath")).toBeRejectedWithError("No such object: TestMath")
+          await expectAsync(serverClient.getObjectReference("testSettings")).toBeRejectedWithError("No such object: testSettings")
         },
         {enableServerControl: true}
       )

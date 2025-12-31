@@ -5,8 +5,8 @@ import {runWithWebSocketServerClient} from "./support/helpers/web-socket-server-
 describe("static class methods", () => {
   it("calls static methods on a global class reference", async () => {
     await runWithWebSocketServerClient(async ({client}) => {
-      const arrayClass = await client.getObject("Array")
-      const isArray = await arrayClass.callMethod("isArray", [])
+      const arrayClass = await client.getObjectReference("Array")
+      const isArray = await arrayClass.callMethodResult("isArray", [])
 
       expect(isArray).toEqual(true)
     })
@@ -24,8 +24,8 @@ describe("static class methods", () => {
 
       serverClient.registerClass("StaticClass", StaticClass)
 
-      const staticClassReference = await client.getObject("StaticClass")
-      const greeting = await staticClassReference.callMethod("greet", "World")
+      const staticClassReference = await client.getObjectReference("StaticClass")
+      const greeting = await staticClassReference.callMethodResult("greet", "World")
 
       expect(greeting).toEqual("Hello World")
     })

@@ -7,6 +7,8 @@ import safeJSONStringify from "../utils/safe-json-stringify.js"
 
 const logger = new Logger("Scoundrel Client")
 
+/** @typedef {import("./reference-proxy.js").Proxy} Proxy */
+
 // logger.setDebug(true)
 
 /**
@@ -96,7 +98,7 @@ export default class Client {
     let methodArgs
 
     if (typeof optionsOrArg === "undefined") {
-      methodArgs = []
+      methodArgs = args
     } else if (this.isPlainObject(optionsOrArg)) {
       const optionKeys = Object.keys(optionsOrArg)
       const hasOptionKey = optionKeys.some((key) => allowedOptions.has(key))
@@ -104,8 +106,16 @@ export default class Client {
       if (hasOptionKey) {
         const unknownOptions = optionKeys.filter((key) => !allowedOptions.has(key))
         if (unknownOptions.length === 0) {
-          options = /** @type {ReturnOptions} */ (optionsOrArg)
-          methodArgs = args
+          const optionValuesAreBoolean = optionKeys
+            .filter((key) => allowedOptions.has(key))
+            .every((key) => typeof optionsOrArg[key] === "boolean")
+
+          if (optionValuesAreBoolean) {
+            options = /** @type {ReturnOptions} */ (optionsOrArg)
+            methodArgs = args
+          } else {
+            methodArgs = [optionsOrArg, ...args]
+          }
         } else {
           throw new Error(`Unknown callMethodOnReference options: ${unknownOptions.join(", ")}`)
         }
@@ -119,15 +129,13 @@ export default class Client {
     const returnReference = options?.reference === true
     const returnResult = options?.result === true
     const returnProxy = options?.proxy === true
+    const returnFlags = [returnReference, returnResult, returnProxy].filter(Boolean).length
 
-    if (returnReference && returnResult) {
-      throw new Error("callMethodOnReference options reference and result cannot both be true")
-    }
-    if (returnProxy && !returnReference) {
-      throw new Error("callMethodOnReference option proxy requires reference to be true")
+    if (returnFlags > 1) {
+      throw new Error("callMethodOnReference options reference, result, and proxy are mutually exclusive")
     }
 
-    const withReference = returnReference
+    const withReference = returnReference || returnProxy
     const result = await this.sendCommand("call_method_on_reference", {
       args: this.parseArg(methodArgs),
       method_name: methodName,
@@ -162,93 +170,96 @@ export default class Client {
   }
 
   /**
-   * Evaluates a string and returns a reference or result
-   * @overload
+   * Evaluates a string and returns a proxy
    * @param {string} evalString Code to evaluate
-   * @returns {Promise<Reference>} Reference to the evaluated value
+   * @returns {Promise<Proxy>} Proxy to the evaluated value
    */
-  /**
-   * Evaluates a string and returns a reference or result
-   * @overload
-   * @param {ReturnReferenceOptions} options Eval options
-   * @param {string} evalString Code to evaluate
-   * @returns {Promise<Reference>} Reference to the evaluated value
-   */
-  /**
-   * Evaluates a string and returns a reference or result
-   * @overload
-   * @param {ReturnResultOptions} options Eval options
-   * @param {string} evalString Code to evaluate
-   * @returns {Promise<any>} Evaluated result
-   */
-  /**
-   * Evaluates a string and returns a reference or result
-   * @param {string | ReturnOptions} optionsOrEvalString Options or code to evaluate
-   * @param {string} [evalString] Code to evaluate
-   * @returns {Promise<Reference | any>} Reference or evaluated result
-   */
-  async eval(optionsOrEvalString, evalString) {
-    const allowedOptions = new Set(["reference", "result"])
-    /** @type {ReturnOptions} */
-    let options = {}
-    /** @type {string | undefined} */
-    let targetEvalString = evalString
-
-    if (typeof evalString === "undefined") {
-      if (this.isPlainObject(optionsOrEvalString)) {
-        throw new Error("eval requires an eval string when options are provided")
-      }
-
-      targetEvalString = /** @type {string} */ (optionsOrEvalString)
-    } else {
-      options = /** @type {ReturnOptions} */ (optionsOrEvalString ?? {})
-
-      if (!this.isPlainObject(options)) {
-        throw new Error("eval options must be a plain object")
-      }
+  async eval(evalString) {
+    if (typeof evalString !== "string") {
+      throw new Error("eval requires an eval string")
     }
 
-    const unknownOptions = Object.keys(options).filter((key) => !allowedOptions.has(key))
-    if (unknownOptions.length > 0) {
-      throw new Error(`Unknown eval options: ${unknownOptions.join(", ")}`)
-    }
-
-    const returnReference = options.reference === true
-    const returnResult = options.result === true
-
-    if (returnReference && returnResult) {
-      throw new Error("eval options reference and result cannot both be true")
-    }
-
-    const withReference = returnReference || !returnResult
     const result = await this.sendCommand("eval", {
-      eval_string: targetEvalString,
-      with_reference: withReference
+      eval_string: evalString,
+      with_reference: true
     })
 
     if (!result) throw new Error("Blank result given")
 
-    if (withReference) {
-      const objectId = result.object_id
+    const objectId = result.object_id
 
-      if (!objectId) throw new Error(`No object ID given in result: ${JSON.stringify(result)}`)
+    if (!objectId) throw new Error(`No object ID given in result: ${JSON.stringify(result)}`)
 
-      return this.spawnReference(objectId)
+    const spawnedReference = this.spawnReference(objectId)
+    return referenceProxy(spawnedReference)
+  }
+
+  /**
+   * Evaluates a string and returns a reference
+   * @param {string} evalString Code to evaluate
+   * @returns {Promise<Reference>} Reference to the evaluated value
+   */
+  async evalReference(evalString) {
+    if (typeof evalString !== "string") {
+      throw new Error("evalReference requires an eval string")
     }
 
+    const result = await this.sendCommand("eval", {
+      eval_string: evalString,
+      with_reference: true
+    })
+
+    if (!result) throw new Error("Blank result given")
+
+    const objectId = result.object_id
+
+    if (!objectId) throw new Error(`No object ID given in result: ${JSON.stringify(result)}`)
+
+    return this.spawnReference(objectId)
+  }
+
+  /**
+   * Evaluates a string and returns the result directly
+   * @param {string} evalString Code to evaluate
+   * @returns {Promise<any>} Evaluated result
+   */
+  async evalResult(evalString) {
+    if (typeof evalString !== "string") {
+      throw new Error("evalResult requires an eval string")
+    }
+
+    const result = await this.sendCommand("eval", {
+      eval_string: evalString,
+      with_reference: false
+    })
+
+    if (!result) throw new Error("Blank result given")
     if (!("response" in result)) throw new Error(`No response given in result: ${JSON.stringify(result)}`)
 
     return result.response
   }
 
   /**
-   * Evaluates a string and returns a new reference
-   * @param {string} evalString Code to evaluate
-   * @returns {Promise<Reference>} Reference to the evaluated value
+   * Imports a module and returns a proxy to it
+   * @param {string} importName Module name to import
+   * @returns {Promise<Proxy>} Proxy to the module
    */
-  async evalWithReference(evalString) {
-    console.warn("Scoundrel Client", "evalWithReference is deprecated; use eval instead.")
-    return this.eval({reference: true}, evalString)
+  async import(importName) {
+    if (typeof importName !== "string") throw new Error("import requires a module name")
+
+    const result = await this.sendCommand("import", {
+      import_name: importName
+    })
+
+    logger.log(() => ["import", {result}])
+
+    if (!result) throw new Error("No result given")
+    if (!result.object_id) throw new Error(`No object ID given in result: ${JSON.stringify(result)}`)
+
+    const id = result.object_id
+    const spawnedReference = this.spawnReference(id)
+
+    return referenceProxy(spawnedReference)
   }
 
   /**
@@ -256,7 +267,9 @@ export default class Client {
    * @param {string} importName Module name to import
    * @returns {Promise<Reference>} Reference to the module
    */
-  async import(importName) {
+  async importReference(importName) {
+    if (typeof importName !== "string") throw new Error("importReference requires a module name")
+
     const result = await this.sendCommand("import", {
       import_name: importName
     })
@@ -272,11 +285,33 @@ export default class Client {
   }
 
   /**
-   * Gets a registered object by name
+   * Imports a module and returns the serialized result
+   * @param {string} importName Module name to import
+   * @returns {Promise<any>} Serialized result for the module
+   */
+  async importResult(importName) {
+    const reference = await this.importReference(importName)
+    return await reference.serialize()
+  }
+
+  /**
+   * Gets a registered object by name and returns a proxy
+   * @param {string} objectName Registered object name
+   * @returns {Promise<Proxy>} Proxy to the object
+   */
+  async getObject(objectName) {
+    const reference = await this.getObjectReference(objectName)
+    return referenceProxy(reference)
+  }
+
+  /**
+   * Gets a registered object by name and returns a reference
    * @param {string} objectName Registered object name
    * @returns {Promise<Reference>} Reference to the object
    */
-  async getObject(objectName) {
+  async getObjectReference(objectName) {
+    if (typeof objectName !== "string") throw new Error("getObjectReference requires an object name")
+
     const result = await this.sendCommand("get_object", {
       object_name: objectName
     })
@@ -289,12 +324,49 @@ export default class Client {
   }
 
   /**
-   * Spawns a new reference to an object
+   * Gets a registered object by name and returns the serialized result
+   * @param {string} objectName Registered object name
+   * @returns {Promise<any>} Serialized result for the object
+   */
+  async getObjectResult(objectName) {
+    const reference = await this.getObjectReference(objectName)
+    return await reference.serialize()
+  }
+
+  /**
+   * Spawns a new reference to an object and returns a proxy
+   * @param {string} className Class name to construct
+   * @param  {...any} args Constructor arguments
+   * @returns {Promise<Proxy>} Proxy to the new instance
+   */
+  async newObject(className, ...args) {
+    if (typeof className !== "string") throw new Error("newObject requires a class name")
+
+    const result = await this.sendCommand("new_object_with_reference", {
+      args: this.parseArg(args),
+      class_name: className
+    })
+
+    if (!result) throw new Error("Blank result given")
+
+    const id = result.object_id
+
+    if (!id) throw new Error(`No object ID given in result: ${JSON.stringify(result)}`)
+
+    const spawnedReference = this.spawnReference(id)
+
+    return referenceProxy(spawnedReference)
+  }
+
+  /**
+   * Spawns a new reference to an object and returns a reference
    * @param {string} className Class name to construct
    * @param  {...any} args Constructor arguments
    * @returns {Promise<Reference>} Reference to the new instance
    */
-  async newObjectWithReference(className, ...args) {
+  async newObjectReference(className, ...args) {
+    if (typeof className !== "string") throw new Error("newObjectReference requires a class name")
+
     const result = await this.sendCommand("new_object_with_reference", {
       args: this.parseArg(args),
       class_name: className
@@ -307,6 +379,17 @@ export default class Client {
     if (!id) throw new Error(`No object ID given in result: ${JSON.stringify(result)}`)
 
     return this.spawnReference(id)
+  }
+
+  /**
+   * Spawns a new reference to an object and returns the serialized result
+   * @param {string} className Class name to construct
+   * @param  {...any} args Constructor arguments
+   * @returns {Promise<any>} Serialized result for the new instance
+   */
+  async newObjectResult(className, ...args) {
+    const reference = await this.newObjectReference(className, ...args)
+    return await reference.serialize()
   }
 
   /**
@@ -621,7 +704,7 @@ export default class Client {
    * @overload
    * @param {number} referenceId Reference identifier
    * @param {string | number} attributeName Attribute name to read
-   * @param {ReturnReferenceOptions} options Options for the read
+   * @param {ReturnReferenceOptions} optionsOrArg Options for the read
    * @returns {Promise<Reference | Proxy>} Reference or proxy to the attribute value
    */
   /**
@@ -629,8 +712,15 @@ export default class Client {
    * @overload
    * @param {number} referenceId Reference identifier
    * @param {string | number} attributeName Attribute name to read
-   * @param {ReturnResultOptions} options Options for the read
+   * @param {ReturnResultOptions} optionsOrArg Options for the read
    * @returns {Promise<any>} Attribute value
+   */
+  /**
+   * Reads an attribute on a reference and returns a new reference
+   * @param {number} referenceId Reference identifier
+   * @param {string | number} attributeName Attribute name to read
+   * @param {ReturnOptions} [optionsOrArg] Options for the read
+   * @returns {Promise<Reference | Proxy | any>} Reference, proxy, or result
    */
   async readAttributeOnReferenceWithReference(referenceId, attributeName, optionsOrArg) {
     const allowedOptions = new Set(["reference", "result", "proxy"])
@@ -648,6 +738,7 @@ export default class Client {
         if (unknownOptions.length === 0) {
           const hasExplicitReturn = Object.prototype.hasOwnProperty.call(optionsOrArg, "reference")
             || Object.prototype.hasOwnProperty.call(optionsOrArg, "result")
+            || Object.prototype.hasOwnProperty.call(optionsOrArg, "proxy")
           options = /** @type {ReturnOptions} */ ({
             ...(hasExplicitReturn ? {} : {reference: true}),
             ...optionsOrArg
@@ -660,6 +751,15 @@ export default class Client {
       }
     } else {
       throw new Error("readAttributeOnReferenceWithReference does not accept positional arguments")
+    }
+
+    const returnReference = options?.reference === true
+    const returnResult = options?.result === true
+    const returnProxy = options?.proxy === true
+    const returnFlags = [returnReference, returnResult, returnProxy].filter(Boolean).length
+
+    if (returnFlags > 1) {
+      throw new Error("readAttributeOnReferenceWithReference options reference, result, and proxy are mutually exclusive")
     }
 
     return this.readAttributeOnReference(referenceId, options, attributeName)
@@ -735,15 +835,13 @@ export default class Client {
     const returnReference = options?.reference === true
     const returnResult = options?.result === true
     const returnProxy = options?.proxy === true
+    const returnFlags = [returnReference, returnResult, returnProxy].filter(Boolean).length
 
-    if (returnReference && returnResult) {
-      throw new Error("readAttributeOnReference options reference and result cannot both be true")
-    }
-    if (returnProxy && !returnReference) {
-      throw new Error("readAttributeOnReference option proxy requires reference to be true")
+    if (returnFlags > 1) {
+      throw new Error("readAttributeOnReference options reference, result, and proxy are mutually exclusive")
     }
 
-    const withReference = returnReference
+    const withReference = returnReference || returnProxy
     const result = await this.sendCommand("read_attribute", {
       attribute_name: targetAttributeName,
       reference_id: referenceId,

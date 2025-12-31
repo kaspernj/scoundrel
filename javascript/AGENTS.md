@@ -2,6 +2,8 @@
 
 ## Development workflow
 
+- After making changes, run `npm run lint` and `npm run typecheck`.
+- After making changes, check whether `README.md` needs updates.
 - `npm run lint`
 - `npm run typecheck`
 - `npm run test`

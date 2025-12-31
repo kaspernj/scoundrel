@@ -5,7 +5,7 @@ import {runWithWebSocketServerClient} from "./support/helpers/web-socket-server-
 describe("serialize reference", () => {
   it("serializes plain objects and arrays", async () => {
     await runWithWebSocketServerClient(async ({client}) => {
-      const arrayRef = await client.newObjectWithReference("Array")
+      const arrayRef = await client.newObjectReference("Array")
       await arrayRef.callMethod("push", {foo: ["bar", 1, false]})
 
       const result = await arrayRef.serialize()
@@ -24,7 +24,7 @@ describe("serialize reference", () => {
 
       serverClient.registerClass("NonPlain", NonPlain)
 
-      const reference = await client.newObjectWithReference("NonPlain")
+      const reference = await client.newObjectReference("NonPlain")
 
       /** @type {Error | undefined} */
       let caughtError
@@ -44,7 +44,7 @@ describe("serialize reference", () => {
     await runWithWebSocketServerClient(async ({client, serverClient}) => {
       serverClient.registerObject("objectWithFunction", {ok: true, nope: () => "bad"})
 
-      const reference = await client.getObject("objectWithFunction")
+      const reference = await client.getObjectReference("objectWithFunction")
 
       /** @type {Error | undefined} */
       let caughtError
