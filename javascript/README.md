@@ -24,8 +24,8 @@ await clientWebSocket.waitForOpened()
 const client = new Client(clientWebSocket)
 
 const math = await client.import("math")
-const pi = await math.readAttributeWithReference("pi")
-const cosOfPi = await math.callMethod("cos", {returnReference: true}, pi)
+const pi = await math.readAttribute({reference: true}, "pi")
+const cosOfPi = await math.callMethod("cos", {reference: true}, pi)
 const result = await cosOfPi.serialize()
 
 expect(result).toEqual(-1)
@@ -44,7 +44,7 @@ await arrayRef.callMethod("push", "one", "two")
 const joined = await arrayRef.callMethod("join", ", ")
 expect(joined).toEqual("one, two")
 
-const lengthRef = await arrayRef.callMethod("push", {returnReference: true}, "three")
+const lengthRef = await arrayRef.callMethod("push", {reference: true}, "three")
 const length = await lengthRef.serialize()
 expect(length).toEqual(3)
 ```
@@ -53,11 +53,21 @@ Read attributes directly or as references:
 
 ```js
 const math = await client.import("math")
-const piRef = await math.readAttributeWithReference("pi")
+const piRef = await math.readAttribute({reference: true}, "pi")
 const pi = await piRef.serialize()
 
 const e = await math.readAttribute("E")
 expect([pi, e].every((value) => typeof value === "number")).toEqual(true)
+```
+
+You can also return proxies directly when you want proxy behavior:
+
+```js
+const math = await client.import("math")
+const piProxy = await math.readAttribute({reference: true, proxy: true}, "pi")
+
+// @ts-ignore
+const pi = await piProxy.valueOf()
 ```
 
 Fetch globally available or registered objects:
@@ -103,6 +113,50 @@ const testMath = await client.getObject("TestMath")
 const sum = await testMath.callMethod("add", 2, 3)
 
 expect(sum).toEqual(5)
+```
+
+## Reference proxy access
+
+Wrap a reference with the proxy helper to access remote methods and attributes with a more native feel:
+
+```js
+import referenceProxy from "scoundrel-remote-eval/src/client/reference-proxy.js"
+
+const arrayRef = await client.newObjectWithReference("Array")
+const array = referenceProxy(arrayRef)
+
+// @ts-ignore
+await array.push("one")
+
+// @ts-ignore
+await array.push("two")
+
+// @ts-ignore
+const firstValue = await array[0]
+
+// @ts-ignore
+const length = await array.length
+```
+
+## Return options for reference calls
+
+For `callMethod` and `readAttribute`, you can request a reference or a result explicitly:
+
+- `{reference: true}`: return a `Reference`
+- `{result: true}`: return the raw value
+- `{proxy: true}`: return a proxy (requires `{reference: true}`)
+
+Examples:
+
+```js
+const lengthRef = await arrayRef.callMethod("push", {reference: true}, "three")
+const length = await lengthRef.serialize()
+
+const lengthValue = await arrayRef.callMethod("push", {result: true}, "four")
+
+const lengthProxy = await arrayRef.callMethod("push", {reference: true, proxy: true}, "five")
+// @ts-ignore
+const asString = await lengthProxy.toString()
 ```
 
 ## Server-to-client control
@@ -161,12 +215,12 @@ client.unregisterObject("testSettings")
 `eval` defaults to returning a reference, but you can request the raw result:
 
 ```js
-const result = await serverClient.eval({returnResult: true}, "(() => 1 + 1)()")
+const result = await serverClient.eval({result: true}, "(() => 1 + 1)()")
 expect(result).toEqual(2)
 ```
 
-Use `eval` with `returnReference` if you need to be explicit:
+Use `eval` with `reference` if you need to be explicit:
 
 ```js
-const greetingRef = await serverClient.eval({returnReference: true}, "(() => { return 'Hello' })()")
+const greetingRef = await serverClient.eval({reference: true}, "(() => { return 'Hello' })()")
 ```

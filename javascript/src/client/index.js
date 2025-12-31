@@ -2,6 +2,7 @@
 
 import Logger from "../logger.js"
 import Reference from "./reference.js"
+import referenceProxy from "./reference-proxy.js"
 import safeJSONStringify from "../utils/safe-json-stringify.js"
 
 const logger = new Logger("Scoundrel Client")
@@ -9,9 +10,9 @@ const logger = new Logger("Scoundrel Client")
 // logger.setDebug(true)
 
 /**
- * @typedef {{returnReference?: boolean, returnResult?: boolean}} ReturnOptions
- * @typedef {ReturnOptions & {returnResult?: false}} ReturnReferenceOptions
- * @typedef {ReturnOptions & {returnResult: true, returnReference?: false}} ReturnResultOptions
+ * @typedef {{reference?: boolean, result?: boolean, proxy?: boolean}} ReturnOptions
+ * @typedef {ReturnOptions & {result?: false}} ReturnReferenceOptions
+ * @typedef {ReturnOptions & {result: true, reference?: false}} ReturnResultOptions
  */
 export default class Client {
   /**
@@ -68,7 +69,7 @@ export default class Client {
    * @param {string} methodName Method name to invoke
    * @param {ReturnReferenceOptions} options Options for the call
    * @param  {...any} args Arguments to pass to the method
-   * @returns {Promise<Reference>} Reference to the returned value
+   * @returns {Promise<Reference | Proxy>} Reference or proxy to the returned value
    */
   /**
    * Calls a method on a reference and returns the result directly
@@ -85,10 +86,10 @@ export default class Client {
    * @param {string} methodName Method name to invoke
    * @param {ReturnOptions | any} [optionsOrArg] Options for the call or first argument
    * @param  {...any} args Arguments to pass to the method
-   * @returns {Promise<Reference | any>} Result or reference from the method call
+   * @returns {Promise<Reference | Proxy | any>} Result or reference from the method call
    */
   async callMethodOnReference(referenceId, methodName, optionsOrArg, ...args) {
-    const allowedOptions = new Set(["returnReference", "returnResult"])
+    const allowedOptions = new Set(["reference", "result", "proxy"])
     /** @type {ReturnOptions | undefined} */
     let options
     /** @type {any[]} */
@@ -102,12 +103,12 @@ export default class Client {
 
       if (hasOptionKey) {
         const unknownOptions = optionKeys.filter((key) => !allowedOptions.has(key))
-        if (unknownOptions.length > 0) {
+        if (unknownOptions.length === 0) {
+          options = /** @type {ReturnOptions} */ (optionsOrArg)
+          methodArgs = args
+        } else {
           throw new Error(`Unknown callMethodOnReference options: ${unknownOptions.join(", ")}`)
         }
-
-        options = /** @type {ReturnOptions} */ (optionsOrArg)
-        methodArgs = args
       } else {
         methodArgs = [optionsOrArg, ...args]
       }
@@ -115,11 +116,15 @@ export default class Client {
       methodArgs = [optionsOrArg, ...args]
     }
 
-    const returnReference = options?.returnReference === true
-    const returnResult = options?.returnResult === true
+    const returnReference = options?.reference === true
+    const returnResult = options?.result === true
+    const returnProxy = options?.proxy === true
 
     if (returnReference && returnResult) {
-      throw new Error("callMethodOnReference options returnReference and returnResult cannot both be true")
+      throw new Error("callMethodOnReference options reference and result cannot both be true")
+    }
+    if (returnProxy && !returnReference) {
+      throw new Error("callMethodOnReference option proxy requires reference to be true")
     }
 
     const withReference = returnReference
@@ -137,7 +142,8 @@ export default class Client {
 
       if (!objectId) throw new Error(`No object ID given in result: ${JSON.stringify(result)}`)
 
-      return this.spawnReference(objectId)
+      const spawnedReference = this.spawnReference(objectId)
+      return returnProxy ? referenceProxy(spawnedReference) : spawnedReference
     }
 
     return result.response
@@ -151,8 +157,8 @@ export default class Client {
    * @returns {Promise<Reference>} Reference to the return value
    */
   async callMethodOnReferenceWithReference(referenceId, methodName, ...args) {
-    console.warn("Scoundrel Client", "callMethodOnReferenceWithReference is deprecated; use callMethodOnReference with returnReference instead.")
-    return this.callMethodOnReference(referenceId, methodName, {returnReference: true}, ...args)
+    console.warn("Scoundrel Client", "callMethodOnReferenceWithReference is deprecated; use callMethodOnReference with reference instead.")
+    return this.callMethodOnReference(referenceId, methodName, {reference: true}, ...args)
   }
 
   /**
@@ -182,7 +188,7 @@ export default class Client {
    * @returns {Promise<Reference | any>} Reference or evaluated result
    */
   async eval(optionsOrEvalString, evalString) {
-    const allowedOptions = new Set(["returnReference", "returnResult"])
+    const allowedOptions = new Set(["reference", "result"])
     /** @type {ReturnOptions} */
     let options = {}
     /** @type {string | undefined} */
@@ -207,11 +213,11 @@ export default class Client {
       throw new Error(`Unknown eval options: ${unknownOptions.join(", ")}`)
     }
 
-    const returnReference = options.returnReference === true
-    const returnResult = options.returnResult === true
+    const returnReference = options.reference === true
+    const returnResult = options.result === true
 
     if (returnReference && returnResult) {
-      throw new Error("eval options returnReference and returnResult cannot both be true")
+      throw new Error("eval options reference and result cannot both be true")
     }
 
     const withReference = returnReference || !returnResult
@@ -242,7 +248,7 @@ export default class Client {
    */
   async evalWithReference(evalString) {
     console.warn("Scoundrel Client", "evalWithReference is deprecated; use eval instead.")
-    return this.eval({returnReference: true}, evalString)
+    return this.eval({reference: true}, evalString)
   }
 
   /**
@@ -605,34 +611,143 @@ export default class Client {
 
   /**
    * Reads an attribute on a reference and returns a new reference
+   * @overload
    * @param {number} referenceId Reference identifier
-   * @param {string} attributeName Attribute name to read
+   * @param {string | number} attributeName Attribute name to read
    * @returns {Promise<Reference>} Reference to the attribute value
    */
-  async readAttributeOnReferenceWithReference(referenceId, attributeName) {
-    const result = await this.sendCommand("read_attribute", {
-      attribute_name: attributeName,
-      reference_id: referenceId,
-      with: "reference"
-    })
-    const id = result.response
+  /**
+   * Reads an attribute on a reference and returns a new reference
+   * @overload
+   * @param {number} referenceId Reference identifier
+   * @param {string | number} attributeName Attribute name to read
+   * @param {ReturnReferenceOptions} options Options for the read
+   * @returns {Promise<Reference | Proxy>} Reference or proxy to the attribute value
+   */
+  /**
+   * Reads an attribute on a reference and returns the result directly
+   * @overload
+   * @param {number} referenceId Reference identifier
+   * @param {string | number} attributeName Attribute name to read
+   * @param {ReturnResultOptions} options Options for the read
+   * @returns {Promise<any>} Attribute value
+   */
+  async readAttributeOnReferenceWithReference(referenceId, attributeName, optionsOrArg) {
+    const allowedOptions = new Set(["reference", "result", "proxy"])
+    /** @type {ReturnOptions} */
+    let options = {reference: true}
 
-    return this.spawnReference(id)
+    if (typeof optionsOrArg === "undefined") {
+      options = {reference: true}
+    } else if (this.isPlainObject(optionsOrArg)) {
+      const optionKeys = Object.keys(optionsOrArg)
+      const hasOptionKey = optionKeys.some((key) => allowedOptions.has(key))
+
+      if (hasOptionKey) {
+        const unknownOptions = optionKeys.filter((key) => !allowedOptions.has(key))
+        if (unknownOptions.length === 0) {
+          const hasExplicitReturn = Object.prototype.hasOwnProperty.call(optionsOrArg, "reference")
+            || Object.prototype.hasOwnProperty.call(optionsOrArg, "result")
+          options = /** @type {ReturnOptions} */ ({
+            ...(hasExplicitReturn ? {} : {reference: true}),
+            ...optionsOrArg
+          })
+        } else {
+          throw new Error(`Unknown readAttributeOnReferenceWithReference options: ${unknownOptions.join(", ")}`)
+        }
+      } else {
+        throw new Error("readAttributeOnReferenceWithReference does not accept positional arguments")
+      }
+    } else {
+      throw new Error("readAttributeOnReferenceWithReference does not accept positional arguments")
+    }
+
+    return this.readAttributeOnReference(referenceId, options, attributeName)
   }
 
   /**
    * Reads an attribute on a reference and returns the result directly
+   * @overload
    * @param {number} referenceId Reference identifier
-   * @param {string} attributeName Attribute name to read
+   * @param {string | number} attributeName Attribute name to read
    * @returns {Promise<any>} Attribute value
    */
-  async readAttributeOnReference(referenceId, attributeName) {
+  /**
+   * Reads an attribute on a reference and returns a new reference
+   * @overload
+   * @param {number} referenceId Reference identifier
+   * @param {ReturnReferenceOptions} options Options for the read
+   * @param {string | number} attributeName Attribute name to read
+   * @returns {Promise<Reference | Proxy>} Reference or proxy to the attribute value
+   */
+  /**
+   * Reads an attribute on a reference and returns the result directly
+   * @overload
+   * @param {number} referenceId Reference identifier
+   * @param {ReturnResultOptions} options Options for the read
+   * @param {string | number} attributeName Attribute name to read
+   * @returns {Promise<any>} Attribute value
+   */
+  /**
+   * Reads an attribute on a reference and returns the result directly
+   * @param {number} referenceId Reference identifier
+   * @param {string | number | ReturnOptions} attributeNameOrOptions Attribute name or options
+   * @param {string | number} [attributeName] Attribute name when using options
+   * @returns {Promise<Reference | Proxy | any>} Attribute value or reference
+   */
+  async readAttributeOnReference(referenceId, attributeNameOrOptions, attributeName) {
+    const allowedOptions = new Set(["reference", "result", "proxy"])
+    /** @type {ReturnOptions | undefined} */
+    let options
+    /** @type {string | number | undefined} */
+    let targetAttributeName = attributeName
+
+    if (this.isPlainObject(attributeNameOrOptions)) {
+      const optionKeys = Object.keys(attributeNameOrOptions)
+      const hasOptionKey = optionKeys.some((key) => allowedOptions.has(key))
+
+      if (hasOptionKey) {
+        const unknownOptions = optionKeys.filter((key) => !allowedOptions.has(key))
+        if (unknownOptions.length === 0) {
+          options = /** @type {ReturnOptions} */ (attributeNameOrOptions)
+        } else {
+          throw new Error(`Unknown readAttributeOnReference options: ${unknownOptions.join(", ")}`)
+        }
+      } else {
+        targetAttributeName = /** @type {string | number} */ (attributeNameOrOptions)
+      }
+    } else {
+      targetAttributeName = /** @type {string | number} */ (attributeNameOrOptions)
+    }
+
+    if (typeof targetAttributeName === "undefined") {
+      throw new Error("readAttributeOnReference requires an attribute name")
+    }
+
+    const returnReference = options?.reference === true
+    const returnResult = options?.result === true
+    const returnProxy = options?.proxy === true
+
+    if (returnReference && returnResult) {
+      throw new Error("readAttributeOnReference options reference and result cannot both be true")
+    }
+    if (returnProxy && !returnReference) {
+      throw new Error("readAttributeOnReference option proxy requires reference to be true")
+    }
+
+    const withReference = returnReference
     const result = await this.sendCommand("read_attribute", {
-      attribute_name: attributeName,
+      attribute_name: targetAttributeName,
       reference_id: referenceId,
-      with: "result"
+      with: withReference ? "reference" : "result"
     })
-    return result.response
+
+    if (!withReference) return result.response
+
+    const id = result.response
+    const spawnedReference = this.spawnReference(id)
+
+    return returnProxy ? referenceProxy(spawnedReference) : spawnedReference
   }
 
   /**

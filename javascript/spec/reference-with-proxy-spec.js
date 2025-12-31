@@ -42,6 +42,50 @@ describe("referenceWithProxy", () => {
       })
     })
 
+    it("awaits attributes via the proxy", async () => {
+      await runWithWebSocketServerClient(async ({client}) => {
+        const arrayReference = await client.newObjectWithReference("Array")
+        const arrayProxy = referenceWithProxy(arrayReference)
+
+        // @ts-ignore
+        await arrayProxy.push("test1")
+
+        // @ts-ignore
+        await arrayProxy.push("test2")
+
+        // @ts-ignore
+        const firstValue = await arrayProxy[0]
+
+        // @ts-ignore
+        const lengthValue = await arrayProxy.length
+
+        expect(firstValue).toEqual("test1")
+        expect(lengthValue).toEqual(2)
+      })
+    })
+
+    it("awaits method results via the proxy", async () => {
+      await runWithWebSocketServerClient(async ({client}) => {
+        const arrayReference = await client.newObjectWithReference("Array")
+        const arrayProxy = referenceWithProxy(arrayReference)
+
+        // @ts-ignore
+        await arrayProxy.push("test1")
+
+        // @ts-ignore
+        await arrayProxy.push("test2")
+
+        // @ts-ignore
+        const lastValue = await arrayProxy.pop()
+
+        // @ts-ignore
+        const remainingLength = await arrayProxy.length
+
+        expect(lastValue).toEqual("test2")
+        expect(remainingLength).toEqual(1)
+      })
+    })
+
     it("calls methods", async () => {
       await runWithWebSocketServerClient(async ({client}) => {
         const stringObjectReference = await client.newObjectWithReference("Array")

@@ -2,84 +2,8 @@
 
 import {runWithWebSocketServerClient} from "./support/helpers/web-socket-server-client.js"
 
-describe("scoundrel - web-socket - javascript", () => {
+describe("scoundrel - web-socket - javascript - server control", () => {
   describe("server control disabled", () => {
-    it("creates a server and connects to it with the client", async () => {
-      await runWithWebSocketServerClient(async ({client}) => {
-        const stringObject = await client.newObjectWithReference("Array")
-
-        await stringObject.callMethod("push", "test1")
-        await stringObject.callMethod("push", "test2")
-
-        const result = await stringObject.serialize()
-
-        expect(result).toEqual(["test1", "test2"])
-      })
-    })
-
-    it("returns results from method calls", async () => {
-      await runWithWebSocketServerClient(async ({client}) => {
-        const stringObject = await client.newObjectWithReference("Array")
-
-        await stringObject.callMethod("push", "test1")
-        await stringObject.callMethod("push", "test2")
-
-        const result = await stringObject.callMethod("join", ", ")
-
-        expect(result).toEqual("test1, test2")
-      })
-    })
-
-    it("returns a reference when callMethod returnReference is true", async () => {
-      await runWithWebSocketServerClient(async ({client}) => {
-        const stringObject = await client.newObjectWithReference("Array")
-
-        const lengthRef = await stringObject.callMethod("push", {returnReference: true}, "test1")
-        const length = await lengthRef.serialize()
-
-        expect(length).toEqual(1)
-      })
-    })
-
-    it("returns a result when callMethod returnResult is true", async () => {
-      await runWithWebSocketServerClient(async ({client}) => {
-        const stringObject = await client.newObjectWithReference("Array")
-
-        const length = await stringObject.callMethod("push", {returnResult: true}, "test1")
-
-        expect(length).toEqual(1)
-      })
-    })
-
-    it("rejects unknown callMethod options", async () => {
-      await runWithWebSocketServerClient(async ({client}) => {
-        const stringObject = await client.newObjectWithReference("Array")
-
-        await expectAsync(
-          stringObject.callMethod("push", {returnReference: true, unknownOption: true}, "test1")
-        ).toBeRejectedWithError("Unknown callMethodOnReference options: unknownOption")
-      })
-    })
-
-    it("handles errors from method calls", async () => {
-      await runWithWebSocketServerClient(async ({client}) => {
-        const stringObject = await client.newObjectWithReference("Array")
-
-        /** @type {Error | null} */
-        let caughtError = null
-
-        try {
-          await stringObject.callMethod("nonExistentMethod")
-        } catch (error) {
-          caughtError = error instanceof Error ? error : new Error(String(error))
-        }
-
-        expect(caughtError).not.toBeNull()
-        expect(caughtError).toBeInstanceOf(Error)
-        expect(caughtError && caughtError.message).toEqual("No method called 'nonExistentMethod' on a 'Array'")
-      })
-    })
-
     it("rejects server control when not enabled on the client", async () => {
       await runWithWebSocketServerClient(async ({serverClient}) => {
         await expectAsync(serverClient.newObjectWithReference("Array")).toBeRejectedWithError("Server control is disabled")
@@ -147,10 +71,10 @@ describe("scoundrel - web-socket - javascript", () => {
       )
     })
 
-    it("returns results when eval returnResult is true", async () => {
+    it("returns results when eval result is true", async () => {
       await runWithWebSocketServerClient(
         async ({serverClient}) => {
-          const result = await serverClient.eval({returnResult: true}, "(() => 1 + 1)()")
+          const result = await serverClient.eval({result: true}, "(() => 1 + 1)()")
 
           expect(result).toEqual(2)
         },
@@ -158,10 +82,10 @@ describe("scoundrel - web-socket - javascript", () => {
       )
     })
 
-    it("returns references when eval returnReference is true", async () => {
+    it("returns references when eval reference is true", async () => {
       await runWithWebSocketServerClient(
         async ({serverClient}) => {
-          const evaluated = await serverClient.eval({returnReference: true}, "(() => ({value: 123}))()")
+          const evaluated = await serverClient.eval({reference: true}, "(() => ({value: 123}))()")
           const result = await evaluated.serialize()
 
           expect(result).toEqual({value: 123})

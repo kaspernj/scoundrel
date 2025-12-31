@@ -48,7 +48,7 @@ describe("scoundrel - web-socket - python", () => {
 
   it("imports classes and uses them", async () => {
     const math = await shared.client.import("math")
-    const pi = await math.readAttributeWithReference("pi")
+    const pi = await math.readAttribute({reference: true}, "pi")
     const cosOfPi = await math.callMethodWithReference("cos", pi)
     const result = await cosOfPi.serialize()
 
