@@ -147,7 +147,7 @@ const length = await array.length
 
 ## Chaining proxy calls
 
-You can chain method calls on the same proxy and only `await` once (the last call's result is returned):
+You can chain method calls on the same proxy and only `await` once (the last call's raw result is returned). The chain returns the final method result directly, so helpers like `__serialize()` are not available on the chain itself. Chaining is only ergonomic when intermediate calls return the original object (or another object that still supports the next method), because the chain replays calls on the same reference.
 
 ```js
 const result = await array
