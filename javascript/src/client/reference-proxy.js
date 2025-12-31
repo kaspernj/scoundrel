@@ -1,8 +1,7 @@
 // @ts-check
 
 /**
- * @typedef {Record<string, any> & {__serialize: () => Promise<any>}} ReferenceProxy
- * @typedef {ReferenceProxy} Proxy
+ * @typedef {any} Proxy
  * @typedef {object} ProxyPromiseMethods
  * @property {(onfulfilled?: (value: any) => any, onrejected?: (reason: any) => any) => Promise<any>} then Promise-style then handler
  * @property {(onrejected?: (reason: any) => any) => Promise<any>} catch Promise-style catch handler
