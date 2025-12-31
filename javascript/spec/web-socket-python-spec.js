@@ -36,10 +36,10 @@ describe("scoundrel - web-socket - python", () => {
   })
 
   it("creates a server and connects to it with the client", async () => {
-    const stringObject = await shared.client.newObjectWithReference("[]")
+    const stringObject = await shared.client.newObjectReference("[]")
 
-    await stringObject.callMethod("append", "test1")
-    await stringObject.callMethod("append", "test2")
+    await stringObject.callMethodResult("append", "test1")
+    await stringObject.callMethodResult("append", "test2")
 
     const result = await stringObject.serialize()
 
@@ -47,9 +47,9 @@ describe("scoundrel - web-socket - python", () => {
   })
 
   it("imports classes and uses them", async () => {
-    const math = await shared.client.import("math")
-    const pi = await math.readAttributeWithReference("pi")
-    const cosOfPi = await math.callMethodWithReference("cos", pi)
+    const math = await shared.client.importReference("math")
+    const pi = await math.readAttributeReference("pi")
+    const cosOfPi = await math.callMethodReference("cos", pi)
     const result = await cosOfPi.serialize()
 
     expect(result).toEqual(-1)

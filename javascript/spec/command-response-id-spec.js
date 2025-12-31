@@ -7,8 +7,8 @@ describe("command responses", () => {
     await runWithWebSocketServerClient(async ({client, serverClient}) => {
       await expectAsync(serverClient.sendCommand("get_object", {object_name: "Math"})).toBeRejected()
 
-      const arrayReference = await client.newObjectWithReference("Array")
-      const length = await arrayReference.readAttribute("length")
+      const arrayReference = await client.newObjectReference("Array")
+      const length = await arrayReference.readAttributeResult("length")
 
       expect(length).toEqual(0)
     })

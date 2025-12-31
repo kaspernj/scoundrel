@@ -1,11 +1,40 @@
 // @ts-check
 
 /**
- * @param {import("./reference.js").default} reference Reference to proxy
- * @param {string} prop Property name to call
- * @returns {(...args: any[]) => Promise<any>} Function that forwards calls
+ * @typedef {Record<string, any> & {__serialize: () => Promise<any>}} ReferenceProxy
+ * @typedef {ReferenceProxy} Proxy
+ * @typedef {object} ProxyPromiseMethods
+ * @property {(onfulfilled?: (value: any) => any, onrejected?: (reason: any) => any) => Promise<any>} then Promise-style then handler
+ * @property {(onrejected?: (reason: any) => any) => Promise<any>} catch Promise-style catch handler
+ * @property {(onfinally?: () => any) => Promise<any>} finally Promise-style finally handler
  */
-const proxyMethodSpawner = (reference, prop) => (...args) => reference.callMethodWithReference(prop, ...args)
+
+/**
+ * @param {import("./reference.js").default} reference Reference to proxy
+ * @param {string} prop Property name to resolve
+ * @returns {((...args: any[]) => Promise<any>) & ProxyPromiseMethods} Callable proxy for method or attribute
+ */
+const proxyPropertySpawner = (reference, prop) => {
+  /** @type {((...args: any[]) => Promise<any>) & ProxyPromiseMethods} */
+  const methodProxy = /** @type {any} */ ((...args) => reference.callMethod(prop, ...args))
+
+  Object.defineProperties(methodProxy, {
+    then: {
+      value: (resolve, reject) => reference.readAttributeResult(prop).then(resolve, reject),
+      enumerable: false
+    },
+    catch: {
+      value: (reject) => reference.readAttributeResult(prop).catch(reject),
+      enumerable: false
+    },
+    finally: {
+      value: (callback) => reference.readAttributeResult(prop).finally(callback),
+      enumerable: false
+    }
+  })
+
+  return methodProxy
+}
 
 const proxyObjectHandler = {
   /**
@@ -23,7 +52,12 @@ const proxyObjectHandler = {
       return boundMethod
     }
 
-    return proxyMethodSpawner(reference, prop)
+    if (prop == "then" || prop == "catch" || prop == "finally") return undefined
+    if (prop == "asymmetricMatch" || prop == "jasmineToString") return undefined
+
+    if (typeof prop !== "string") return undefined
+
+    return proxyPropertySpawner(reference, prop)
   },
 
   /**

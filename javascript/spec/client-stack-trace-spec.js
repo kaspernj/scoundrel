@@ -13,7 +13,7 @@ describe("Client stack traces", () => {
 
       serverClient.registerClass("ExplodingClass", ExplodingClass)
 
-      const reference = await client.newObjectWithReference("ExplodingClass")
+      const reference = await client.newObjectReference("ExplodingClass")
       const promise = reference.callMethod("boom")
 
       /** @type {Error | undefined} */
@@ -51,7 +51,7 @@ describe("Client stack traces", () => {
 
       serverClient.registerClass("ExplodingClass", ExplodingClass)
 
-      const reference = await client.newObjectWithReference("ExplodingClass")
+      const reference = await client.newObjectReference("ExplodingClass")
       const promise = reference.callMethod("boom")
 
       /** @type {Error | undefined} */
@@ -85,7 +85,7 @@ describe("Client stack traces", () => {
 
       serverClient.registerClass("ExplodingClass", ExplodingClass)
 
-      const reference = await client.newObjectWithReference("ExplodingClass")
+      const reference = await client.newObjectReference("ExplodingClass")
       const promise = reference.callMethod("boom")
 
       /** @type {Error | undefined} */
