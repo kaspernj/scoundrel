@@ -86,6 +86,22 @@ describe("referenceWithProxy", () => {
       })
     })
 
+    it("chains proxy calls with a single await", async () => {
+      await runWithWebSocketServerClient(async ({client}) => {
+        const arrayReference = await client.newObjectReference("Array")
+        const arrayProxy = referenceWithProxy(arrayReference)
+
+        // @ts-ignore
+        const result = await arrayProxy
+          .__chain()
+          .push("test1")
+          .push("test2")
+          .join(",")
+
+        expect(result).toEqual("test1,test2")
+      })
+    })
+
     it("calls methods", async () => {
       await runWithWebSocketServerClient(async ({client}) => {
         const stringObjectReference = await client.newObjectReference("Array")
