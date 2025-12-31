@@ -147,7 +147,7 @@ const length = await array.length
 
 ## Chaining proxy calls
 
-You can chain method calls and only `await` once:
+You can chain method calls on the same proxy and only `await` once (the last call's result is returned):
 
 ```js
 const result = await array

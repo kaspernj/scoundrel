@@ -47,10 +47,10 @@ const createChainProxy = (reference) => {
   }
 
   const executeChain = async () => {
-    let current = state.reference
+    const baseReference = state.reference
 
     if (state.steps.length === 0) {
-      return await referenceProxy(current).__serialize()
+      return await referenceProxy(baseReference).__serialize()
     }
 
     for (let index = 0; index < state.steps.length; index += 1) {
@@ -58,10 +58,10 @@ const createChainProxy = (reference) => {
       const isLast = index === state.steps.length - 1
 
       if (isLast) {
-        return await current.callMethodResult(step.method, ...step.args)
+        return await baseReference.callMethodResult(step.method, ...step.args)
       }
 
-      current = await current.callMethodReference(step.method, ...step.args)
+      await baseReference.callMethodResult(step.method, ...step.args)
     }
   }
 
