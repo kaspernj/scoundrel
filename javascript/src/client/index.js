@@ -681,6 +681,14 @@ export default class Client {
    * @returns {Promise<Reference | Proxy>} Reference or proxy to the attribute value
    */
   /**
+   * Reads an attribute on a reference and returns a result or reference
+   * @overload
+   * @param {number} referenceId Reference identifier
+   * @param {ReturnOptions} options Options for the read
+   * @param {string | number} attributeName Attribute name to read
+   * @returns {Promise<Reference | Proxy | any>} Attribute value or reference
+   */
+  /**
    * Reads an attribute on a reference and returns the result directly
    * @overload
    * @param {number} referenceId Reference identifier

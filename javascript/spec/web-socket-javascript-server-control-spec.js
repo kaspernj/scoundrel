@@ -97,7 +97,7 @@ describe("scoundrel - web-socket - javascript - server control", () => {
     it("rejects unknown eval options", async () => {
       await runWithWebSocketServerClient(
         async ({serverClient}) => {
-          await expectAsync(serverClient.eval({unknownOption: true}, "(() => 1 + 1)()")).toBeRejectedWithError(
+          await expectAsync(serverClient.eval(/** @type {any} */ ({unknownOption: true}), "(() => 1 + 1)()")).toBeRejectedWithError(
             "Unknown eval options: unknownOption"
           )
         },
