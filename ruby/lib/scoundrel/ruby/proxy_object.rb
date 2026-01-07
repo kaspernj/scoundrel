@@ -27,7 +27,8 @@ class Scoundrel::Ruby::ProxyObject
     timeout, args = @__rp_rp.__send__(:extract_timeout_from_args, args)
     raise ArgumentError, "Unexpected arguments: #{args.inspect}" unless args.empty?
 
-    return @__rp_rp.send(cmd: :obj_read_attribute, id: @__rp_id, attribute: attribute, timeout: timeout)
+    parsed_attribute = @__rp_rp.parse_args(attribute)
+    return @__rp_rp.send(cmd: :obj_read_attribute, id: @__rp_id, attribute: parsed_attribute, timeout: timeout)
   end
 
   #Unsets all data on the object.

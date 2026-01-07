@@ -167,6 +167,14 @@ describe "RubyProcess" do
     expect(hash.read_attribute("foo").__rp_marshal).to eq "bar"
   end
 
+  it "reads hash keys via read_attribute when key is a proxy object" do
+    hash = rp.new(:Hash)
+    key = rp.new(:String, "proxy-key")
+    hash[key] = "value"
+
+    expect(hash.read_attribute(key).__rp_marshal).to eq "value"
+  end
+
   it "should clean itself" do
     rp.garbage_collect
     GC.start

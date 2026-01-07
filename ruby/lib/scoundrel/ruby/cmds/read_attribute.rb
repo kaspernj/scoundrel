@@ -2,7 +2,7 @@ class Scoundrel::Ruby::Client
   #Reads an attribute or hash key on a proxied object.
   def cmd_obj_read_attribute(obj)
     myobj = proxyobj_object(obj.fetch(:id))
-    attribute = obj.fetch(:attribute)
+    attribute = read_args(obj.fetch(:attribute))
 
     value = if myobj.is_a?(Hash)
       if myobj.key?(attribute)
