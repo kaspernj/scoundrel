@@ -1,5 +1,5 @@
 rvm: true
-before_script:
+before_install:
   - sudo apt-get update && sudo apt-get install -y php-cli python3-websockets
 environment:
   RUBY_VERSION: 3.2.9
@@ -9,6 +9,11 @@ builds:
     script:
       - cd ruby && bundle && bundle exec rspec
   build_2:
+    name: PHP
+    script:
+      - cd php && composer install
+      - cd php && vendor/bin/phpunit
+  build_3:
     name: JavaScript
     script:
       - cd javascript && npm install
