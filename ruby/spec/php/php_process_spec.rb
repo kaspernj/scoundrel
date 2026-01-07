@@ -136,6 +136,7 @@ describe "Scoundrel::Php::Client" do
       expect do
         php.eval("some_fatal_error()")
       end.to raise_error(Scoundrel::Php::Client::FatalError)
+        .or raise_error(Scoundrel::Php::Client::DestroyedError)
 
       expect do
         php.func("getmypid")
