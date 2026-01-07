@@ -22,6 +22,14 @@ class Scoundrel::Ruby::ProxyObject
     return Marshal.load(@__rp_rp.send(cmd: :obj_marshal, id: @__rp_id, timeout: timeout))
   end
 
+  #Reads an attribute or hash key from the proxied object.
+  def read_attribute(attribute, *args)
+    timeout, args = @__rp_rp.__send__(:extract_timeout_from_args, args)
+    raise ArgumentError, "Unexpected arguments: #{args.inspect}" unless args.empty?
+
+    return @__rp_rp.send(cmd: :obj_read_attribute, id: @__rp_id, attribute: attribute, timeout: timeout)
+  end
+
   #Unsets all data on the object.
   def __rp_destroy
     @__rp_id = nil, @__rp_rp = nil, @__rp_pid = nil, @__rp_instance_id = nil
