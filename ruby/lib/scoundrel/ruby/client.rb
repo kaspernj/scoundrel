@@ -224,7 +224,8 @@ class Scoundrel::Ruby::Client
   end
 
   #Sends a command to the other process. This should not be called manually, but is used by various other parts of the framework.
-  def send(obj, &block)
+  def send(obj = nil, timeout: nil, **kwargs, &block)
+    obj ||= kwargs
     alive_check!
 
     #Sync ID stuff so they dont get mixed up.
@@ -261,7 +262,7 @@ class Scoundrel::Ruby::Client
     begin
       @answers[id] = Queue.new
       @io_out.puts(line)
-      return answer_read(id)
+      return answer_read(id, timeout: timeout)
     ensure
       #Be sure that the answer is actually deleted to avoid memory-leaking.
       @answers.delete(id)
@@ -279,6 +280,17 @@ class Scoundrel::Ruby::Client
   end
 
 private
+
+  def extract_timeout_from_args(args)
+    return [nil, args] if args.empty?
+
+    last = args.last
+    return [nil, args] unless last.is_a?(Hash) && last.key?(:timeout) && last.keys == [:timeout]
+
+    extracted_args = args.dup
+    options = extracted_args.pop
+    [options[:timeout], extracted_args]
+  end
 
   #Raises an error if the subprocess is no longer alive.
   def alive_check!
@@ -358,10 +370,18 @@ private
   end
 
   #Waits for an answer to appear in the answers-hash. Then deletes it from hash and returns it.
-  def answer_read(id)
+  def answer_read(id, timeout: nil)
     loop do
       debug "Waiting for answer #{id}\n" if @debug
-      answer = @answers[id].pop
+      answer = begin
+        if timeout
+          Timeout.timeout(timeout) { @answers[id].pop }
+        else
+          @answers[id].pop
+        end
+      rescue Timeout::Error
+        raise Timeout::Error, "Timed out waiting for answer to ID: #{id}."
+      end
       debug "Returning answer #{id}\n" if @debug
 
       if answer.is_a?(Hash) and type = answer[:type]

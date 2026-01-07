@@ -15,8 +15,11 @@ class Scoundrel::Ruby::ProxyObject
   #===Examples
   # str = rp.new(:String, "Kasper") #=> <RubyProcess::ProxyObject>
   # str.__rp_marshal #=> "Kasper"
-  def __rp_marshal
-    return Marshal.load(@__rp_rp.send(cmd: :obj_marshal, id: @__rp_id))
+  def __rp_marshal(*args)
+    timeout, args = @__rp_rp.__send__(:extract_timeout_from_args, args)
+    raise ArgumentError, "Unexpected arguments: #{args.inspect}" unless args.empty?
+
+    return Marshal.load(@__rp_rp.send(cmd: :obj_marshal, id: @__rp_id, timeout: timeout))
   end
 
   #Unsets all data on the object.
@@ -28,7 +31,8 @@ class Scoundrel::Ruby::ProxyObject
   RUBY_METHODS = [:to_i, :to_s, :to_str, :to_f]
   RUBY_METHODS.each do |method_name|
     define_method(method_name) do |*args, &blk|
-      return @__rp_rp.send(cmd: :obj_method, id: @__rp_id, method: method_name, args: args, &blk).__rp_marshal
+      timeout, args = @__rp_rp.__send__(:extract_timeout_from_args, args)
+      return @__rp_rp.send(cmd: :obj_method, id: @__rp_id, method: method_name, args: args, timeout: timeout, &blk).__rp_marshal
     end
   end
 
@@ -46,10 +50,11 @@ class Scoundrel::Ruby::ProxyObject
   # length_int = str.length #=> <RubyProcess::ProxyObject::2>
   # length_int.__rp_marshal #=> 6
   def method_missing(method, *args, &block)
+    timeout, args = @__rp_rp.__send__(:extract_timeout_from_args, args)
     debug "Method-missing-args-before: #{args} (#{@__rp_pid})\n" if @debug
     real_args = @__rp_rp.parse_args(args)
     debug "Method-missing-args-after: #{real_args}\n" if @debug
 
-    return @__rp_rp.send(cmd: :obj_method, id: @__rp_id, method: method, args: real_args, &block)
+    return @__rp_rp.send(cmd: :obj_method, id: @__rp_id, method: method, args: real_args, timeout: timeout, &block)
   end
 end

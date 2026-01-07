@@ -8,9 +8,7 @@ describe "RubyProcess" do
       sp = data[:subproc]
 
       begin
-        Timeout.timeout(1) do
-          sp.static(:Object, :sleep, 2)
-        end
+        sp.static(:Object, :sleep, 2, timeout: 1)
 
         raise "Expected timeout to be raised."
       rescue Timeout::Error

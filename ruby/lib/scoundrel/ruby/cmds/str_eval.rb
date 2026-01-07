@@ -2,8 +2,11 @@ class Scoundrel::Ruby::Client
   #Evalulates the given string in the process.
   #===Examples
   # rp.str_eval("return 10").__rp_marshal #=> 10
-  def str_eval(str)
-    send(cmd: :str_eval, str: str)
+  def str_eval(str, *args)
+    timeout, args = extract_timeout_from_args(args)
+    raise ArgumentError, "Unexpected arguments: #{args.inspect}" unless args.empty?
+
+    send(cmd: :str_eval, str: str, timeout: timeout)
   end
 
   #Process-method for 'str_eval'.

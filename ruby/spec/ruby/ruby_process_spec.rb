@@ -77,16 +77,13 @@ describe "RubyProcess" do
       nil
     ")
 
-    require "timeout"
-    Timeout.timeout(10) do
-      expected_value = 8
-      rp.static("Kaspertest", "kaspertest") do |count|
-        expect(expected_value).to eq count.__rp_marshal
-        expected_value += 1
-      end
-
-      expect(expected_value).to eq 13
+    expected_value = 8
+    rp.static("Kaspertest", "kaspertest", timeout: 10) do |count|
+      expect(expected_value).to eq count.__rp_marshal
+      expected_value += 1
     end
+
+    expect(expected_value).to eq 13
   end
 
   it "should be able to handle large block-runs" do

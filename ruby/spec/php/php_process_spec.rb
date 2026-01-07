@@ -7,11 +7,9 @@ describe "Scoundrel::Php::Client" do
       php.func("define", "TEST_CONSTANT", 5)
       raise "Expected 'TEST_CONSTANT'-constant to exist but it didnt." unless php.func("defined", "TEST_CONSTANT")
 
-      Timeout.timeout(1) do
-        0.upto(10_000) do
-          const = php.constant_val("TEST_CONSTANT")
-          expect(const).to eq 5
-        end
+      0.upto(10_000) do
+        const = php.constant_val("TEST_CONSTANT", timeout: 1)
+        expect(const).to eq 5
       end
     end
   end
