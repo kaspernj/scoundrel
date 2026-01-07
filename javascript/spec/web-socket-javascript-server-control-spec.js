@@ -15,7 +15,7 @@ describe("scoundrel - web-socket - javascript - server control", () => {
     it("lets the server eval code on the client", async () => {
       await runWithWebSocketServerClient(
         async ({serverClient}) => {
-          const evaluatedArray = await serverClient.eval("(() => { const values = ['from client eval']; values.push('more values'); return values })()")
+          const evaluatedArray = await serverClient.eval("return ['from client eval', 'more values']")
 
           await evaluatedArray.push("after eval")
 
@@ -49,7 +49,7 @@ describe("scoundrel - web-socket - javascript - server control", () => {
           client.registerObject("testSettings", {prefix: "Hello"})
 
           const result = await serverClient.evalResult(
-            "(() => { const greeter = new TestGreeter(testSettings.prefix); return greeter.greet('World') })()"
+            "return new TestGreeter(testSettings.prefix).greet('World')"
           )
 
           expect(result).toEqual("Hello World")
@@ -64,7 +64,7 @@ describe("scoundrel - web-socket - javascript - server control", () => {
           client.registerObject("bad-name", {value: 123})
           client.registerObject("eval", {value: "shadow"})
           client.registerObject("this", {value: "also shadow"})
-          await expectAsync(serverClient.eval("(() => 1 + 1)()")).toBeRejectedWithError(
+          await expectAsync(serverClient.eval("return 1 + 1")).toBeRejectedWithError(
             "Invalid registered identifier(s): bad-name, eval, this"
           )
         },
@@ -75,7 +75,7 @@ describe("scoundrel - web-socket - javascript - server control", () => {
     it("returns results when evalResult is used", async () => {
       await runWithWebSocketServerClient(
         async ({serverClient}) => {
-          const result = await serverClient.evalResult("(() => 1 + 1)()")
+          const result = await serverClient.evalResult("return 1 + 1")
 
           expect(result).toEqual(2)
         },
@@ -139,7 +139,7 @@ describe("scoundrel - web-socket - javascript - server control", () => {
             return counter.count
           `)
 
-          const finalCount = await serverClient.evalResult("counter.count")
+          const finalCount = await serverClient.evalResult("return counter.count")
 
           expect(result).toEqual(1)
           expect(finalCount).toEqual(1)
@@ -151,7 +151,7 @@ describe("scoundrel - web-socket - javascript - server control", () => {
     it("returns references when evalReference is used", async () => {
       await runWithWebSocketServerClient(
         async ({serverClient}) => {
-          const evaluated = await serverClient.evalReference("(() => ({value: 123}))()")
+          const evaluated = await serverClient.evalReference("return {value: 123}")
           const result = await evaluated.serialize()
 
           expect(result).toEqual({value: 123})

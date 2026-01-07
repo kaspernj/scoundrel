@@ -224,7 +224,7 @@ client.registerClass("TestGreeter", TestGreeter)
 client.registerObject("testSettings", {prefix: "Hello"})
 
 const serverClient = server.getClients()[0] // from your ScoundrelServer instance
-const greetingProxy = await serverClient.eval("(() => { const greeter = new TestGreeter(testSettings.prefix); return greeter.greet('World') })()")
+const greetingProxy = await serverClient.eval("return new TestGreeter(testSettings.prefix).greet('World')")
 const greeting = await greetingProxy.__serialize()
 
 expect(greeting).toEqual("Hello World")
@@ -237,18 +237,18 @@ client.unregisterClass("TestGreeter")
 client.unregisterObject("testSettings")
 ```
 
-`eval` returns a proxy by default, but you can request the raw result or a reference:
+`eval` wraps your string in an async function, so use `return` to provide a value. It returns a proxy by default, but you can request the raw result or a reference:
 
 ```js
-const proxyResult = await serverClient.eval("(() => ({value: 42}))()")
+const proxyResult = await serverClient.eval("return {value: 42}")
 const value = await proxyResult.__serialize()
 
-const result = await serverClient.evalResult("(() => 1 + 1)()")
+const result = await serverClient.evalResult("return 1 + 1")
 expect(result).toEqual(2)
 ```
 
 Use `evalReference` if you need a reference:
 
 ```js
-const greetingRef = await serverClient.evalReference("(() => { return 'Hello' })()")
+const greetingRef = await serverClient.evalReference("return 'Hello'")
 ```
