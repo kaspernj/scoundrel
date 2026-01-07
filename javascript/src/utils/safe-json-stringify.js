@@ -11,9 +11,15 @@ export default function safeJSONStringify(value) {
   const valueType = typeof value
   if (valueType === "function") throw new Error("Cannot serialize function at value")
   if (valueType === "symbol") throw new Error("Cannot serialize symbol at value")
-  if (valueType === "bigint") throw new Error("Cannot serialize bigint at value")
   if (valueType === "number" && !Number.isFinite(value)) {
     throw new Error("Cannot serialize non-finite number at value")
+  }
+  if (valueType === "bigint") {
+    const numberValue = Number(value)
+    if (!Number.isFinite(numberValue)) {
+      throw new Error("Cannot serialize non-finite number at value")
+    }
+    return JSON.stringify(numberValue)
   }
 
   if (value && valueType === "object") {
@@ -37,8 +43,14 @@ export default function safeJSONStringify(value) {
 
     if (valType === "function") throw new Error(`Cannot serialize function at ${currentPath}`)
     if (valType === "symbol") throw new Error(`Cannot serialize symbol at ${currentPath}`)
-    if (valType === "bigint") throw new Error(`Cannot serialize bigint at ${currentPath}`)
     if (valType === "number" && !Number.isFinite(val)) throw new Error(`Cannot serialize non-finite number at ${currentPath}`)
+    if (valType === "bigint") {
+      const numberValue = Number(val)
+      if (!Number.isFinite(numberValue)) {
+        throw new Error(`Cannot serialize non-finite number at ${currentPath}`)
+      }
+      return numberValue
+    }
 
     if (val === null) return val
 

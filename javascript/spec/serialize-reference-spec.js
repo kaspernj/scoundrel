@@ -35,8 +35,7 @@ describe("serialize reference", () => {
       }
 
       expect(caughtError).toBeInstanceOf(Error)
-      expect(caughtError?.message).toContain("NonPlain")
-      expect(caughtError?.message).toContain("non-plain object")
+      expect(caughtError?.message).toBe("Cannot serialize non-plain object 'NonPlain' at value")
     })
   })
 
@@ -59,6 +58,36 @@ describe("serialize reference", () => {
     })
   })
 
+  it("serializes bigint values as numbers", async () => {
+    await runWithWebSocketServerClient(async ({client, serverClient}) => {
+      serverClient.registerObject("bigIntObject", {count: 42n})
+
+      const reference = await client.getObjectReference("bigIntObject")
+      const result = await reference.serialize()
+
+      expect(result).toEqual({count: 42})
+    })
+  })
+
+  it("serializes a bigint reference value as a number", async () => {
+    await runWithWebSocketServerClient(async ({client, serverClient}) => {
+      class BigIntReturner {
+        method() {
+          return 7n
+        }
+      }
+
+      serverClient.registerClass("BigIntReturner", BigIntReturner)
+
+      const reference = await client.newObjectReference("BigIntReturner")
+      const bigIntReference = await reference.callMethodReference("method")
+
+      const result = await bigIntReference.serialize()
+
+      expect(result).toBe(7)
+    })
+  })
+
   it("throws on unsupported types inside plain objects", async () => {
     await runWithWebSocketServerClient(async ({client, serverClient}) => {
       serverClient.registerObject("objectWithFunction", {ok: true, nope: () => "bad"})
@@ -74,8 +103,7 @@ describe("serialize reference", () => {
       }
 
       expect(caughtError).toBeInstanceOf(Error)
-      expect(caughtError?.message).toContain("function")
-      expect(caughtError?.message).toContain("value.nope")
+      expect(caughtError?.message).toBe("Cannot serialize function at value.nope")
     })
   })
 
@@ -101,8 +129,7 @@ describe("serialize reference", () => {
       }
 
       expect(caughtError).toBeInstanceOf(Error)
-      expect(caughtError?.message).toContain("function")
-      expect(caughtError?.message).toContain("value")
+      expect(caughtError?.message).toBe("Cannot serialize function at value")
     })
   })
 })
