@@ -17,7 +17,7 @@ builds:
     name: JavaScript
     script:
       - cd javascript && npm install
-      - cd javascript && npm test
+      - cd javascript && NODE_OPTIONS=--expose-gc npm test
       - cd javascript && npm run lint
       - cd javascript && npm run typecheck
   build_4:
