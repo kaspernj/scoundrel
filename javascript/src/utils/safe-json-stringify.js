@@ -62,8 +62,7 @@ export default function safeJSONStringify(value) {
   }
 
   try {
-    const json = JSON.stringify(value, replacer)
-    return typeof json === "undefined" ? "null" : json
+    return JSON.stringify(value, replacer)
   } catch (error) {
     if (error instanceof Error) throw error
     throw new Error(String(error))
