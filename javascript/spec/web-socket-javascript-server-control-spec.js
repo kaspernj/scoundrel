@@ -111,6 +111,23 @@ describe("scoundrel - web-socket - javascript - server control", () => {
       )
     })
 
+    it("supports async eval blocks with return values when using eval", async () => {
+      await runWithWebSocketServerClient(
+        async ({serverClient}) => {
+          const evaluatedArray = await serverClient.eval(`
+            const values = await Promise.resolve(["from client eval"])
+            values.push("after await")
+            return values
+          `)
+
+          const result = await evaluatedArray.__serialize()
+
+          expect(result).toEqual(["from client eval", "after await"])
+        },
+        {enableServerControl: true}
+      )
+    })
+
     it("returns references when evalReference is used", async () => {
       await runWithWebSocketServerClient(
         async ({serverClient}) => {
