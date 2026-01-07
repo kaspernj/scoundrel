@@ -42,7 +42,7 @@ export default class Client {
     /** @type {Record<string, any>} */
     this._objects = {}
 
-    /** @type {Record<string, Reference>} */
+    /** @type {Record<string, Reference | WeakRef<Reference>>} */
     this.references = {}
 
     /** @type {Record<number, any>} */
@@ -424,6 +424,7 @@ export default class Client {
    * @param {any} args.data Command data
    * @param {string} [args.error] Error message from the backend
    * @param {string} [args.errorStack] Error stack from the backend
+   * @param {number[]} [args.released_reference_ids] Reference IDs released by the peer
    */
   onCommand = ({command, command_id: commandID, data, error, errorStack, released_reference_ids: releasedReferenceIds, ...restArgs}) => {
     logger.log(() => ["onCommand", {command, commandID, data, error, errorStack, restArgs}])
