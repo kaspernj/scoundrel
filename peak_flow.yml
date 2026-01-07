@@ -23,6 +23,7 @@ builds:
   build_4:
     name: Python
     script:
+      - sudo apt-get update && sudo apt-get install -y python3-venv
       - cd python && python3 -m venv .venv
       - cd python && . .venv/bin/activate && pip install -e ".[dev]"
       - cd python && . .venv/bin/activate && pytest
