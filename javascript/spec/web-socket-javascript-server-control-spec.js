@@ -15,7 +15,7 @@ describe("scoundrel - web-socket - javascript - server control", () => {
     it("lets the server eval code on the client", async () => {
       await runWithWebSocketServerClient(
         async ({serverClient}) => {
-          const evaluatedArray = await serverClient.eval("(() => { const values = ['from client eval']; values.push('more values'); return values })()")
+          const evaluatedArray = await serverClient.eval("return ['from client eval', 'more values']")
 
           await evaluatedArray.push("after eval")
 
@@ -49,7 +49,7 @@ describe("scoundrel - web-socket - javascript - server control", () => {
           client.registerObject("testSettings", {prefix: "Hello"})
 
           const result = await serverClient.evalResult(
-            "(() => { const greeter = new TestGreeter(testSettings.prefix); return greeter.greet('World') })()"
+            "return new TestGreeter(testSettings.prefix).greet('World')"
           )
 
           expect(result).toEqual("Hello World")
@@ -64,7 +64,7 @@ describe("scoundrel - web-socket - javascript - server control", () => {
           client.registerObject("bad-name", {value: 123})
           client.registerObject("eval", {value: "shadow"})
           client.registerObject("this", {value: "also shadow"})
-          await expectAsync(serverClient.eval("(() => 1 + 1)()")).toBeRejectedWithError(
+          await expectAsync(serverClient.eval("return 1 + 1")).toBeRejectedWithError(
             "Invalid registered identifier(s): bad-name, eval, this"
           )
         },
@@ -75,9 +75,74 @@ describe("scoundrel - web-socket - javascript - server control", () => {
     it("returns results when evalResult is used", async () => {
       await runWithWebSocketServerClient(
         async ({serverClient}) => {
-          const result = await serverClient.evalResult("(() => 1 + 1)()")
+          const result = await serverClient.evalResult("return 1 + 1")
 
           expect(result).toEqual(2)
+        },
+        {enableServerControl: true}
+      )
+    })
+
+    it("supports raw eval blocks that return a value", async () => {
+      await runWithWebSocketServerClient(
+        async ({serverClient}) => {
+          const result = await serverClient.evalResult(`
+            const value = 5
+            return value * 2
+          `)
+
+          expect(result).toEqual(10)
+        },
+        {enableServerControl: true}
+      )
+    })
+
+    it("awaits async eval blocks and returns the resolved value", async () => {
+      await runWithWebSocketServerClient(
+        async ({serverClient}) => {
+          const result = await serverClient.evalResult(`
+            const value = await Promise.resolve(7)
+            return value + 1
+          `)
+
+          expect(result).toEqual(8)
+        },
+        {enableServerControl: true}
+      )
+    })
+
+    it("supports async eval blocks with return values when using eval", async () => {
+      await runWithWebSocketServerClient(
+        async ({serverClient}) => {
+          const evaluatedArray = await serverClient.eval(`
+            const values = await Promise.resolve(["from client eval"])
+            values.push("after await")
+            return values
+          `)
+
+          const result = await evaluatedArray.__serialize()
+
+          expect(result).toEqual(["from client eval", "after await"])
+        },
+        {enableServerControl: true}
+      )
+    })
+
+    it("runs async eval blocks only once", async () => {
+      await runWithWebSocketServerClient(
+        async ({client, serverClient}) => {
+          client.registerObject("counter", {count: 0})
+
+          const result = await serverClient.evalResult(`
+            await Promise.resolve()
+            counter.count += 1
+            return counter.count
+          `)
+
+          const finalCount = await serverClient.evalResult("return counter.count")
+
+          expect(result).toEqual(1)
+          expect(finalCount).toEqual(1)
         },
         {enableServerControl: true}
       )
@@ -86,7 +151,7 @@ describe("scoundrel - web-socket - javascript - server control", () => {
     it("returns references when evalReference is used", async () => {
       await runWithWebSocketServerClient(
         async ({serverClient}) => {
-          const evaluated = await serverClient.evalReference("(() => ({value: 123}))()")
+          const evaluated = await serverClient.evalReference("return {value: 123}")
           const result = await evaluated.serialize()
 
           expect(result).toEqual({value: 123})

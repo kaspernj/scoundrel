@@ -636,7 +636,9 @@ export default class Client {
 
         // Ensure registered objects/classes are available as locals inside the eval
         const evaluator = new Function("__evalString", ...scopeKeys, "return eval(__evalString)")
-        const evalResult = evaluator(data.eval_string, ...scopeKeys.map((key) => scope[key]))
+        const evalArgs = scopeKeys.map((key) => scope[key])
+        const evalString = `(async () => {\n${data.eval_string}\n})()`
+        const evalResult = evaluator(evalString, ...evalArgs)
 
         if (evalResult && typeof evalResult.then == "function") {
           evalResult.then(respondWithResult).catch((promiseError) => {
