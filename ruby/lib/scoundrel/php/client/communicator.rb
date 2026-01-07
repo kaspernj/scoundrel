@@ -30,6 +30,7 @@ class Scoundrel::Php::Client::Communicator
       message = @fatal
       @fatal = nil
       error = ::Scoundrel::Php::Client::FatalError.new(message)
+      @fatal_error = error
 
       @responses.each_value do |queue|
         queue.push(error)
@@ -37,6 +38,8 @@ class Scoundrel::Php::Client::Communicator
 
       $stderr.puts "php_process: Throwing fatal error for: #{caller}" if @debug
       @php_process.destroy
+    elsif @fatal_error
+      return nil
     elsif @php_process.destroyed?
       error = ::Scoundrel::Php::Client::DestroyedError.new
       @responses.each_value do |queue|

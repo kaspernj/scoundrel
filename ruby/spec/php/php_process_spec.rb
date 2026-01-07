@@ -133,16 +133,9 @@ describe "Scoundrel::Php::Client" do
 
   it "should throw destroyed error when the process has been destroyed" do
     Scoundrel::Php::Client.new do |php|
-      error = nil
-
-      begin
+      expect do
         php.eval("some_fatal_error()")
-      rescue StandardError => e
-        error = e
-      end
-
-      expect(error).to be_a(Scoundrel::Php::Client::FatalError)
-        .or be_a(Scoundrel::Php::Client::DestroyedError)
+      end.to raise_error(Scoundrel::Php::Client::FatalError)
 
       expect do
         php.func("getmypid")
