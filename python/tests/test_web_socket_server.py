@@ -117,6 +117,18 @@ def test_read_attribute_value_for_dicts():
   assert client.read_attribute_value(payload, "length") == 2
 
 
+def test_release_references_removes_objects():
+  ws = DummyWebSocket()
+  client = WebSocketClient(ws)
+  object_id = client.spawn_object({"name": "Scoundrel"})
+
+  assert object_id in client.objects
+
+  client.release_references([object_id, 999])
+
+  assert object_id not in client.objects
+
+
 @pytest.mark.asyncio
 async def test_command_new_object_with_reference_passes_args():
   ws = DummyWebSocket()
