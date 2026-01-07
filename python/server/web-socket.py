@@ -7,6 +7,7 @@ import importlib
 import json
 import os
 import threading
+import uuid
 
 import websockets
 
@@ -19,6 +20,7 @@ class WebSocketClient:
     self.running = True
     self.objects = {}
     self.objects_count = 0
+    self.instance_id = uuid.uuid4().hex
     debug("WebSocketClient initialized")
 
   async def listen(self):
@@ -89,7 +91,7 @@ class WebSocketClient:
 
     object_id = self.spawn_object(instance)
 
-    await self.respond_to_command(command_id, {"object_id": object_id})
+    await self.respond_to_command(command_id, {"object_id": object_id, "instance_id": self.instance_id})
 
   async def command_call_method_on_reference(self, command_id, data):
     args = self.parse_arg(data["args"])
@@ -106,14 +108,18 @@ class WebSocketClient:
     elif with_string == "result":
       response = result
 
-    await self.respond_to_command(command_id, {"response": response})
+    response_payload = {"response": response}
+    if with_string == "reference":
+      response_payload["instance_id"] = self.instance_id
+
+    await self.respond_to_command(command_id, response_payload)
 
   async def command_import(self, command_id, data):
     import_name = data["import_name"]
     import_result = importlib.import_module(import_name)
     object_id = self.spawn_object(import_result)
 
-    await self.respond_to_command(command_id, {"object_id": object_id})
+    await self.respond_to_command(command_id, {"object_id": object_id, "instance_id": self.instance_id})
 
   async def command_read_attribute(self, command_id, data):
     attribute_name = data["attribute_name"]
@@ -129,7 +135,11 @@ class WebSocketClient:
     elif with_string == "result":
       response = result
 
-    await self.respond_to_command(command_id, {"response": response})
+    response_payload = {"response": response}
+    if with_string == "reference":
+      response_payload["instance_id"] = self.instance_id
+
+    await self.respond_to_command(command_id, response_payload)
 
 
   async def command_serialize_reference(self, command_id, data):
@@ -147,8 +157,10 @@ class WebSocketClient:
 
       return new_array
     elif isinstance(arg, dict):
-      if arg["__scoundrel_type"] == "reference":
-        return self.objects[arg["__scoundrel_object_id"]]
+      if arg.get("__scoundrel_type") == "reference":
+        instance_id = arg.get("__scoundrel_instance_id")
+        if instance_id is None or instance_id == self.instance_id:
+          return self.objects[arg["__scoundrel_object_id"]]
 
       new_dict = {}
 
