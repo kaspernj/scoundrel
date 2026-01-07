@@ -175,6 +175,13 @@ describe "RubyProcess" do
     expect(hash.read_attribute(key).__rp_marshal).to eq "value"
   end
 
+  it "gets objects by name" do
+    klass = rp.get_object("String")
+    instance = klass.new("Hello")
+
+    expect(instance.__rp_marshal).to eq "Hello"
+  end
+
   it "should clean itself" do
     rp.garbage_collect
     GC.start
