@@ -1,3 +1,5 @@
+require "timeout"
+
 class Scoundrel::Php::Client::Communicator
   attr_accessor :objects_handler
 
@@ -16,10 +18,11 @@ class Scoundrel::Php::Client::Communicator
   end
 
   # Proxies to 'communicate_real' but calls 'flush_unset_ids' first.
-  def communicate(hash)
+  def communicate(hash = nil, timeout: nil, **kwargs)
+    hash ||= kwargs
     raise ::Scoundrel::Php::Client::DestroyedError if @php_process.destroyed?
     @objects_handler.flush_unset_ids
-    communicate_real(hash)
+    communicate_real(hash, timeout: timeout)
   end
 
   def check_alive
@@ -62,7 +65,7 @@ class Scoundrel::Php::Client::Communicator
 private
 
   # Generates the command from the given object and sends it to the PHP-process. Then returns the parsed result.
-  def communicate_real(hash)
+  def communicate_real(hash, timeout: nil)
     $stderr.print "Sending: #{hash[:args]}\n" if @debug && hash[:args]
     str = ::Base64.strict_encode64(::PHP.serialize(hash))
 
@@ -87,15 +90,19 @@ private
     end
 
     # Then return result.
-    read_result(id)
+    read_result(id, timeout: timeout)
   end
 
-  def wait_for_and_read_response(id)
+  def wait_for_and_read_response(id, timeout: nil)
     $stderr.print "php_process: Waiting for answer to ID: #{id}\n" if @debug
     check_alive
 
     begin
-      @responses[id].pop
+      if timeout
+        Timeout.timeout(timeout) { @responses[id].pop }
+      else
+        @responses[id].pop
+      end
     rescue Exception => e # rubocop:disable Lint/RescueException
       if e.class.name.to_s == "fatal"
         $stderr.puts "php_process: Deadlock error detected." if @debug
@@ -105,6 +112,10 @@ private
         Thread.pass
         $stderr.puts "php_process: Checking for alive." if @debug
         check_alive
+      end
+
+      if e.is_a?(Timeout::Error)
+        raise Timeout::Error, "Timed out waiting for response to ID: #{id}."
       end
 
       raise
@@ -129,8 +140,8 @@ private
   end
 
   # Searches for a result for a ID and returns it. Runs 'check_alive' to see if the process should be interrupted.
-  def read_result(id)
-    resp = wait_for_and_read_response(id)
+  def read_result(id, timeout: nil)
+    resp = wait_for_and_read_response(id, timeout: timeout)
 
     # Errors are pushed in case of fatals and destroys to avoid deadlock.
     raise resp if resp.is_a?(Exception)
@@ -221,7 +232,8 @@ private
       $stderr.print "Received: #{id}:#{type}:#{args}\n" if @debug
 
       if type == "answer"
-        @responses[id].push(args)
+        queue = @responses[id]
+        queue.push(args) if queue
       elsif type == "send"
         @php_process.show_php_error(args) if args["type"] == "php_error"
         @php_process.__send__(:spawn_call_back_created_func, args) if args["type"] == "call_back_created_func"

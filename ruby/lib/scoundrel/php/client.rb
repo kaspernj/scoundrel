@@ -91,8 +91,11 @@ class Scoundrel::Php::Client
   end
 
   # Returns various info in a hash about the object-cache on the PHP-side.
-  def object_cache_info
-    communicate(type: :object_cache_info)
+  def object_cache_info(*args)
+    timeout, args = extract_timeout_from_args(args)
+    raise ArgumentError, "Unexpected arguments: #{args.inspect}" unless args.empty?
+
+    @communicator.communicate(type: :object_cache_info, timeout: timeout)
   end
 
   # Joins all the threads.
@@ -125,8 +128,11 @@ class Scoundrel::Php::Client
   # Evaluates a string containing PHP-code and returns the result.
   #===Examples
   # print php.eval("array(1 => 2);") #=> {1=>2}
-  def eval(eval_str)
-    @communicator.communicate(type: :eval, eval_str: eval_str)
+  def eval(eval_str, *args)
+    timeout, args = extract_timeout_from_args(args)
+    raise ArgumentError, "Unexpected arguments: #{args.inspect}" unless args.empty?
+
+    @communicator.communicate(type: :eval, eval_str: eval_str, timeout: timeout)
   end
 
   # Spawns a new object from a given class with given arguments and returns it.
@@ -134,7 +140,18 @@ class Scoundrel::Php::Client
   # pe = php.new("PHPExcel")
   # pe.getProperties.setCreator("kaspernj")
   def new(classname, *args)
-    @communicator.communicate(type: :new, class: classname, args: parse_data(args))
+    if classname.is_a?(Hash)
+      options = classname
+      class_name = options[:classname] || options[:class]
+      raise ArgumentError, "Missing :classname for new()." unless class_name
+
+      new_args = options[:args] || []
+      timeout = options[:timeout]
+      return @communicator.communicate(type: :new, class: class_name, args: parse_data(new_args), timeout: timeout)
+    end
+
+    timeout, args = extract_timeout_from_args(args)
+    @communicator.communicate(type: :new, class: classname, args: parse_data(args), timeout: timeout)
   end
 
   # Call a function in PHP.
@@ -143,14 +160,22 @@ class Scoundrel::Php::Client
   # pid_of_php_process = php.func("getmypid")
   # php.func("require_once", "PHPExcel.php")
   def func(func_name, *args)
-    @communicator.communicate(type: :func, func_name: func_name, args: parse_data(args))
+    timeout, args = extract_timeout_from_args(args)
+    @communicator.communicate(type: :func, func_name: func_name, args: parse_data(args), timeout: timeout)
   end
 
   # Sends a call to a static method on a class with given arguments.
   #===Examples
   # php.static("Gtk", "main_quit")
   def static(class_name, method_name, *args)
-    @communicator.communicate(type: :static_method_call, class_name: class_name, method_name: method_name, args: parse_data(args))
+    timeout, args = extract_timeout_from_args(args)
+    @communicator.communicate(
+      type: :static_method_call,
+      class_name: class_name,
+      method_name: method_name,
+      args: parse_data(args),
+      timeout: timeout
+    )
   end
 
   # Parses argument-data into special hashes that can be used on the PHP-side. It is public because the proxy-objects uses it. Normally you would never use it.
@@ -204,11 +229,14 @@ class Scoundrel::Php::Client
   end
 
   # Returns the value of a constant on the PHP-side.
-  def constant_val(name)
+  def constant_val(name, *args)
+    timeout, args = extract_timeout_from_args(args)
+    raise ArgumentError, "Unexpected arguments: #{args.inspect}" unless args.empty?
+
     const_name = name.to_s
 
     unless @constant_val_cache.key?(const_name)
-      @constant_val_cache[const_name] = @communicator.communicate(type: :constant_val, name: name)
+      @constant_val_cache[const_name] = @communicator.communicate(type: :constant_val, name: name, timeout: timeout)
     end
 
     @constant_val_cache[const_name]
@@ -236,6 +264,17 @@ class Scoundrel::Php::Client
   end
 
 private
+
+  def extract_timeout_from_args(args)
+    return [nil, args] if args.empty?
+
+    last = args.last
+    return [nil, args] unless last.is_a?(Hash) && last.key?(:timeout) && last.keys == [:timeout]
+
+    extracted_args = args.dup
+    options = extracted_args.pop
+    [options[:timeout], extracted_args]
+  end
 
   def check_php_process_startup
     $stderr.print "Waiting for PHP-script to be ready.\n" if @debug
