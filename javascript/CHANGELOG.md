@@ -5,3 +5,4 @@
 - Add instance IDs to references so only the owning Scoundrel instance resolves them.
 - Allow serializing reference values that resolve to undefined by returning null instead of throwing.
 - Serialize bigint values as numbers when serializing references.
+- Release remote references when proxies are garbage collected (when weak references are supported).

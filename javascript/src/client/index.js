@@ -42,7 +42,7 @@ export default class Client {
     /** @type {Record<string, any>} */
     this._objects = {}
 
-    /** @type {Record<string, Reference>} */
+    /** @type {Record<string, Reference | WeakRef<Reference>>} */
     this.references = {}
 
     /** @type {Record<number, any>} */
@@ -50,6 +50,11 @@ export default class Client {
 
     this.objectsCount = 0
     this.instanceId = generateInstanceId()
+    this.supportsWeakReferences = typeof globalThis.WeakRef === "function" && typeof globalThis.FinalizationRegistry === "function"
+    this.referenceReleaseRegistry = this.supportsWeakReferences
+      ? new FinalizationRegistry((referenceId) => this.queueReleasedReference(referenceId))
+      : null
+    this.pendingReferenceReleases = new Set()
 
     /** @type {boolean} */
     this.serverControlEnabled = Boolean(options.enableServerControl)
@@ -419,11 +424,14 @@ export default class Client {
    * @param {any} args.data Command data
    * @param {string} [args.error] Error message from the backend
    * @param {string} [args.errorStack] Error stack from the backend
+   * @param {number[]} [args.released_reference_ids] Reference IDs released by the peer
    */
-  onCommand = ({command, command_id: commandID, data, error, errorStack, ...restArgs}) => {
+  onCommand = ({command, command_id: commandID, data, error, errorStack, released_reference_ids: releasedReferenceIds, ...restArgs}) => {
     logger.log(() => ["onCommand", {command, commandID, data, error, errorStack, restArgs}])
 
     try {
+      this.releaseReferences(releasedReferenceIds)
+
       if (!command) {
         throw new Error(`No command key given in data: ${Object.keys(restArgs).join(", ")}`)
       } else if (command == "command_response") {
@@ -984,6 +992,11 @@ export default class Client {
    * @param {any} data Payload to send
    */
   send(data) {
+    if (data && typeof data === "object") {
+      const releasedIds = this.takeReleasedReferenceIds()
+      if (releasedIds.length > 0) data.released_reference_ids = releasedIds
+    }
+
     this.backend.send(data)
   }
 
@@ -1007,9 +1020,41 @@ export default class Client {
   spawnReference(id, instanceId) {
     const reference = new Reference(this, id, instanceId)
 
-    this.references[id] = reference
+    this.trackReference(reference)
 
     return reference
+  }
+
+  trackReference(reference) {
+    if (this.supportsWeakReferences) {
+      this.references[reference.id] = new WeakRef(reference)
+      this.referenceReleaseRegistry?.register(reference, reference.id)
+    } else {
+      this.references[reference.id] = reference
+    }
+  }
+
+  queueReleasedReference(referenceId) {
+    if (!this.supportsWeakReferences) return
+    if (referenceId === undefined || referenceId === null) return
+    this.pendingReferenceReleases.add(referenceId)
+  }
+
+  takeReleasedReferenceIds() {
+    if (!this.supportsWeakReferences) return []
+    if (this.pendingReferenceReleases.size === 0) return []
+
+    const ids = Array.from(this.pendingReferenceReleases)
+    this.pendingReferenceReleases.clear()
+    return ids
+  }
+
+  releaseReferences(referenceIds) {
+    if (!Array.isArray(referenceIds) || referenceIds.length === 0) return
+
+    for (const referenceId of referenceIds) {
+      delete this.objects[referenceId]
+    }
   }
 
   enableServerControl() {
