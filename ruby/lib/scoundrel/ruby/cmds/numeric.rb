@@ -3,8 +3,11 @@ class Scoundrel::Ruby::Client
   #===Examples
   # proxy_int = rp.numeric(5)
   # proxy_int.__rp_marshal #=> 5
-  def numeric(val)
-    return send(cmd: :numeric, val: val)
+  def numeric(val, *args)
+    timeout, args = extract_timeout_from_args(args)
+    raise ArgumentError, "Unexpected arguments: #{args.inspect}" unless args.empty?
+
+    return send(cmd: :numeric, val: val, timeout: timeout)
   end
 
   #Process-method for the 'numeric'-method.

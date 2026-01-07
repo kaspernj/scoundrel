@@ -8,8 +8,8 @@ describe "Scoundrel::Ruby::ClassProxy" do
       ts << Thread.new do
         1.upto(10) do
           Scoundrel::Ruby::ClassProxy.run do
-            str = Scoundrel::Ruby::ClassProxy.subproc.new(:String, "Wee")
-            expect(str.__rp_marshal).to eq "Wee"
+            str = Scoundrel::Ruby::ClassProxy.subproc.new(:String, "Wee", timeout: 5)
+            expect(str.__rp_marshal(timeout: 5)).to eq "Wee"
           end
         end
       end
@@ -24,14 +24,14 @@ describe "Scoundrel::Ruby::ClassProxy" do
     require "stringio"
 
     Scoundrel::Ruby::ClassProxy.run do
-      Scoundrel::Ruby::ClassProxy.subproc.static(:Object, :require, "rubygems")
-      Scoundrel::Ruby::ClassProxy.subproc.static(:Object, :require, "rexml/document")
+      Scoundrel::Ruby::ClassProxy.subproc.static(:Object, :require, "rubygems", timeout: 5)
+      Scoundrel::Ruby::ClassProxy.subproc.static(:Object, :require, "rexml/document", timeout: 5)
 
-      doc = Scoundrel::Ruby::ClassProxy::REXML::Document.new
-      doc.add_element("test")
+      doc = Scoundrel::Ruby::ClassProxy::REXML::Document.new(timeout: 5)
+      doc.add_element("test", timeout: 5)
 
       strio = StringIO.new
-      doc.write(strio)
+      doc.write(strio, timeout: 5)
 
       expect(Kernel.const_defined?(:REXML)).to be false
       expect(strio.string).to eq "<test/>"

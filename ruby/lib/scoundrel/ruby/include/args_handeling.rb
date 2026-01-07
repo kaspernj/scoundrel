@@ -34,7 +34,9 @@ private
     #The object is a proxy-obj - just return its arguments that contains the true 'my_pid'.
     if obj.is_a?(Scoundrel::Ruby::ProxyObject)
       debug "Returning from proxy-obj: (ID: #{obj.args.fetch(:id)}, PID: #{obj.__rp_pid}).\n" if @debug
-      return {type: :proxy_obj, id: obj.__rp_id, pid: obj.__rp_pid}
+      args = {type: :proxy_obj, id: obj.__rp_id, pid: obj.__rp_pid}
+      args[:instance_id] = obj.__rp_instance_id if obj.__rp_instance_id
+      return args
     end
 
     #Check if object has already been spawned. If not: spawn id. Then returns hash for it.
@@ -42,7 +44,7 @@ private
     @objects[id] = obj unless @objects.key?(id)
 
     debug "Proxy-object spawned (ID: #{id}, PID: #{pid}).\n" if @debug
-    return {type: :proxy_obj, id: id, pid: pid}
+    return {type: :proxy_obj, id: id, pid: pid, instance_id: @instance_id}
   end
 
   #Parses an argument array to proxy-object-hashes.
@@ -64,7 +66,11 @@ private
       end
 
       return newarr
-    elsif args.is_a?(Hash) && args.length == 3 && args[:type] == :proxy_obj && args.key?(:id) && args.key?(:pid)
+    elsif args.is_a?(Hash) && args[:type] == :proxy_obj && args.key?(:id) && args.key?(:pid)
+      if args.key?(:instance_id) && args[:instance_id] != @instance_id
+        return args
+      end
+
       debug "Comparing PID (#{args[:pid]}, #{@my_pid}).\n" if @debug
 
       if args[:pid] == @my_pid

@@ -1,18 +1,15 @@
 require "spec_helper"
+require "timeout"
 
 describe "Scoundrel::Php::Client" do
   it "should be able  to work with constants and cache them" do
-    require "timeout"
-
     Scoundrel::Php::Client.new do |php|
       php.func("define", "TEST_CONSTANT", 5)
       raise "Expected 'TEST_CONSTANT'-constant to exist but it didnt." unless php.func("defined", "TEST_CONSTANT")
 
-      Timeout.timeout(1) do
-        0.upto(10_000) do
-          const = php.constant_val("TEST_CONSTANT")
-          expect(const).to eq 5
-        end
+      0.upto(10_000) do
+        const = php.constant_val("TEST_CONSTANT", timeout: 1)
+        expect(const).to eq 5
       end
     end
   end
@@ -48,11 +45,25 @@ describe "Scoundrel::Php::Client" do
     end
   end
 
+  it "supports per-call timeouts" do
+    Scoundrel::Php::Client.new do |php|
+      expect { php.eval("sleep(2);", timeout: 0.1) }.to raise_error(Timeout::Error)
+    end
+  end
+
   it "should spawn instances of classes and set variables on them" do
     Scoundrel::Php::Client.new do |php|
       proxy_obj = php.new("stdClass")
       proxy_obj.__set_var("testvar", 5)
       expect(proxy_obj.__get_var("testvar")).to eq 5
+    end
+  end
+
+  it "supports hash-style options for new" do
+    Scoundrel::Php::Client.new do |php|
+      proxy_obj = php.new(classname: "stdClass", timeout: 1, args: [])
+      proxy_obj.__set_var("testvar", 6)
+      expect(proxy_obj.__get_var("testvar")).to eq 6
     end
   end
 
@@ -150,6 +161,15 @@ describe "Scoundrel::Php::Client" do
 
       instance = php.new(:TestClass, "1")
       expect(instance.testMethod("2")).to eq "12"
+    end
+  end
+
+  it "does not resolve proxy objects from other PHP instances" do
+    Scoundrel::Php::Client.new do |php_one|
+      Scoundrel::Php::Client.new do |php_two|
+        proxy_obj = php_one.new("stdClass")
+        expect(php_two.func("is_array", proxy_obj)).to eq true
+      end
     end
   end
 

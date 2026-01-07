@@ -6,10 +6,11 @@ require "string-cases"
 require "thread"
 require "timeout"
 require "rbconfig"
+require "securerandom"
 
 #This class can communicate with another Ruby-process. It tries to integrate the work in the other process as seamless as possible by using proxy-objects.
 class Scoundrel::Ruby::Client
-  attr_reader :finalize_count, :pid
+  attr_reader :finalize_count, :pid, :instance_id
 
   #Require all the different commands.
   dir = "#{__dir__}/cmds"
@@ -67,6 +68,8 @@ class Scoundrel::Ruby::Client
     @send_mutex = Mutex.new
     @send_count = 0
 
+    @instance_id = @args[:instance_id] || SecureRandom.uuid
+
     #The PID is used to know which process proxy-objects belongs to.
     @my_pid = Process.pid
   end
@@ -91,6 +94,7 @@ class Scoundrel::Ruby::Client
     end
 
     cmd << " \"#{File.realpath(__dir__)}/../server/ruby_process_script.rb\" --pid=#{@my_pid}"
+    cmd << " \"--instance-id=#{@instance_id}\""
     cmd << " --debug" if @args[:debug]
     cmd << " \"--title=#{@args[:title]}\"" unless @args[:title].to_s.strip.empty?
 
@@ -221,7 +225,8 @@ class Scoundrel::Ruby::Client
   end
 
   #Sends a command to the other process. This should not be called manually, but is used by various other parts of the framework.
-  def send(obj, &block)
+  def send(obj = nil, timeout: nil, **kwargs, &block)
+    obj ||= kwargs
     alive_check!
 
     #Sync ID stuff so they dont get mixed up.
@@ -258,7 +263,7 @@ class Scoundrel::Ruby::Client
     begin
       @answers[id] = Queue.new
       @io_out.puts(line)
-      return answer_read(id)
+      return answer_read(id, timeout: timeout)
     ensure
       #Be sure that the answer is actually deleted to avoid memory-leaking.
       @answers.delete(id)
@@ -276,6 +281,17 @@ class Scoundrel::Ruby::Client
   end
 
 private
+
+  def extract_timeout_from_args(args)
+    return [nil, args] if args.empty?
+
+    last = args.last
+    return [nil, args] unless last.is_a?(Hash) && last.key?(:timeout) && last.keys == [:timeout]
+
+    extracted_args = args.dup
+    options = extracted_args.pop
+    [options[:timeout], extracted_args]
+  end
 
   #Raises an error if the subprocess is no longer alive.
   def alive_check!
@@ -303,14 +319,14 @@ private
   end
 
   #Registers an object ID as a proxy-object on the host-side.
-  def proxyobj_get(id, pid = @my_pid)
+  def proxyobj_get(id, pid = @my_pid, instance_id = @instance_id)
     if proxy_obj = @proxy_objs.get(id)
       debug "Reuse proxy-obj (ID: #{id}, PID: #{pid}, fID: #{proxy_obj.args[:id]}, fPID: #{proxy_obj.args[:pid]})\n" if @debug
       return proxy_obj
     end
 
     @proxy_objs_unsets.delete(id)
-    proxy_obj = Scoundrel::Ruby::ProxyObject.new(self, id, pid)
+    proxy_obj = Scoundrel::Ruby::ProxyObject.new(self, id, pid, instance_id)
     @proxy_objs[id] = proxy_obj
     @proxy_objs_ids[proxy_obj.__id__] = id
     ObjectSpace.define_finalizer(proxy_obj, method(:proxyobj_finalizer))
@@ -355,10 +371,18 @@ private
   end
 
   #Waits for an answer to appear in the answers-hash. Then deletes it from hash and returns it.
-  def answer_read(id)
+  def answer_read(id, timeout: nil)
     loop do
       debug "Waiting for answer #{id}\n" if @debug
-      answer = @answers[id].pop
+      answer = begin
+        if timeout
+          Timeout.timeout(timeout) { @answers[id].pop }
+        else
+          @answers[id].pop
+        end
+      rescue Timeout::Error
+        raise Timeout::Error, "Timed out waiting for answer to ID: #{id}."
+      end
       debug "Returning answer #{id}\n" if @debug
 
       if answer.is_a?(Hash) and type = answer[:type]
@@ -376,7 +400,7 @@ private
             raise e
           end
         elsif type == :proxy_obj && id = answer[:id] and pid = answer[:pid]
-          return proxyobj_get(id, pid)
+          return proxyobj_get(id, pid, answer[:instance_id])
         elsif type == :proxy_block_call and block = answer[:block] and args = answer[:args] and queue = answer[:queue]
           #Calls the block. This is used to call the block from the same thread that the answer is being read from. This can cause problems in Hayabusa, that uses thread-variables to determine output and such.
           block.call(*args)

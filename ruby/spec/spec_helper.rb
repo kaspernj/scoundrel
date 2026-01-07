@@ -2,6 +2,7 @@ $LOAD_PATH.unshift(File.join(__dir__, '..', 'lib'))
 $LOAD_PATH.unshift(__dir__)
 require 'rspec'
 require 'scoundrel'
+require 'timeout'
 
 # Requires supporting files with custom matchers and macros, etc,
 # in ./support/ and its subdirectories.

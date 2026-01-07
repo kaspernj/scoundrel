@@ -5,11 +5,12 @@ class Scoundrel::Ruby::Client
   #   fp.write("Test")
   # end
   def static(classname, method, *args, &block)
+    timeout, args = extract_timeout_from_args(args)
     debug "Args-before: #{args} (#{@my_pid})\n" if @debug
     real_args = parse_args(args)
     debug "Real-args: #{real_args}\n" if @debug
 
-    return send(cmd: :static, classname: classname, method: method, args: real_args, &block)
+    return send(cmd: :static, classname: classname, method: method, args: real_args, timeout: timeout, &block)
   end
 
   #Process-method for the 'static'-method.

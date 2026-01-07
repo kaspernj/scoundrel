@@ -1,7 +1,8 @@
 class Scoundrel::Ruby::Client
   #Spawns a new object in the process and returns a proxy-object for it.
   def new(classname, *args, &block)
-    return send(cmd: :new, classname: classname, args: parse_args(args), &block)
+    timeout, args = extract_timeout_from_args(args)
+    return send(cmd: :new, classname: classname, args: parse_args(args), timeout: timeout, &block)
   end
 
   #This command spawns a new object of a given class and returns its hash-handle, so a proxy-object can be spawned on the other side.
