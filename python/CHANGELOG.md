@@ -5,3 +5,4 @@
 - Add pip packaging metadata and pytest coverage for the Python server.
 - Pass constructor args for new object references and validate command return types.
 - Move Python server entrypoint to class-based API.
+- Support list/dict indexing and length in read_attribute for JS proxy parity.
