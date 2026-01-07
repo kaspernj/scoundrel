@@ -6,6 +6,11 @@ import referenceProxy from "./reference-proxy.js"
 import safeJSONStringify from "../utils/safe-json-stringify.js"
 
 const logger = new Logger("Scoundrel Client")
+const generateInstanceId = () => {
+  const randomUUID = globalThis.crypto?.randomUUID
+  if (typeof randomUUID === "function") return randomUUID.call(globalThis.crypto)
+  return `scoundrel-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`
+}
 
 /** @typedef {import("./reference-proxy.js").Proxy} Proxy */
 
@@ -44,6 +49,7 @@ export default class Client {
     this.objects = {}
 
     this.objectsCount = 0
+    this.instanceId = generateInstanceId()
 
     /** @type {boolean} */
     this.serverControlEnabled = Boolean(options.enableServerControl)
@@ -150,7 +156,7 @@ export default class Client {
 
       if (!objectId) throw new Error(`No object ID given in result: ${JSON.stringify(result)}`)
 
-      const spawnedReference = this.spawnReference(objectId)
+      const spawnedReference = this.spawnReference(objectId, result.instance_id)
       return returnProxy ? referenceProxy(spawnedReference) : spawnedReference
     }
 
@@ -190,7 +196,7 @@ export default class Client {
 
     if (!objectId) throw new Error(`No object ID given in result: ${JSON.stringify(result)}`)
 
-    const spawnedReference = this.spawnReference(objectId)
+    const spawnedReference = this.spawnReference(objectId, result.instance_id)
     return referenceProxy(spawnedReference)
   }
 
@@ -215,7 +221,7 @@ export default class Client {
 
     if (!objectId) throw new Error(`No object ID given in result: ${JSON.stringify(result)}`)
 
-    return this.spawnReference(objectId)
+    return this.spawnReference(objectId, result.instance_id)
   }
 
   /**
@@ -257,7 +263,7 @@ export default class Client {
     if (!result.object_id) throw new Error(`No object ID given in result: ${JSON.stringify(result)}`)
 
     const id = result.object_id
-    const spawnedReference = this.spawnReference(id)
+    const spawnedReference = this.spawnReference(id, result.instance_id)
 
     return referenceProxy(spawnedReference)
   }
@@ -281,7 +287,7 @@ export default class Client {
 
     const id = result.object_id
 
-    return this.spawnReference(id)
+    return this.spawnReference(id, result.instance_id)
   }
 
   /**
@@ -320,7 +326,7 @@ export default class Client {
 
     const id = result.object_id
 
-    return this.spawnReference(id)
+    return this.spawnReference(id, result.instance_id)
   }
 
   /**
@@ -353,7 +359,7 @@ export default class Client {
 
     if (!id) throw new Error(`No object ID given in result: ${JSON.stringify(result)}`)
 
-    const spawnedReference = this.spawnReference(id)
+    const spawnedReference = this.spawnReference(id, result.instance_id)
 
     return referenceProxy(spawnedReference)
   }
@@ -378,7 +384,7 @@ export default class Client {
 
     if (!id) throw new Error(`No object ID given in result: ${JSON.stringify(result)}`)
 
-    return this.spawnReference(id)
+    return this.spawnReference(id, result.instance_id)
   }
 
   /**
@@ -485,7 +491,7 @@ export default class Client {
         const objectId = ++this.objectsCount
 
         this.objects[objectId] = object
-        this.respondToCommand(commandID, {object_id: objectId})
+        this.respondToCommand(commandID, {object_id: objectId, instance_id: this.instanceId})
       } else if (command == "new_object_with_reference") {
         const className = data.class_name
         let object
@@ -503,7 +509,7 @@ export default class Client {
         const objectId = ++this.objectsCount
 
         this.objects[objectId] = object
-        this.respondToCommand(commandID, {object_id: objectId})
+        this.respondToCommand(commandID, {object_id: objectId, instance_id: this.instanceId})
       } else if (command == "call_method_on_reference") {
         const referenceId = data.reference_id
         const object = this.objects[referenceId]
@@ -521,7 +527,7 @@ export default class Client {
             const objectId = ++this.objectsCount
 
             this.objects[objectId] = responseValue
-            this.respondToCommand(commandID, {response: objectId})
+            this.respondToCommand(commandID, {response: objectId, instance_id: this.instanceId})
           } else {
             this.respondToCommand(commandID, {response: responseValue})
           }
@@ -566,7 +572,7 @@ export default class Client {
           const objectId = ++this.objectsCount
 
           this.objects[objectId] = attribute
-          this.respondToCommand(commandID, {response: objectId})
+          this.respondToCommand(commandID, {response: objectId, instance_id: this.instanceId})
         } else {
           this.respondToCommand(commandID, {response: attribute})
         }
@@ -576,7 +582,7 @@ export default class Client {
             const objectId = ++this.objectsCount
 
             this.objects[objectId] = evalResult
-            this.respondToCommand(commandID, {object_id: objectId})
+            this.respondToCommand(commandID, {object_id: objectId, instance_id: this.instanceId})
           } else {
             this.respondToCommand(commandID, {response: evalResult})
           }
@@ -680,10 +686,17 @@ export default class Client {
     if (Array.isArray(arg)) {
       return arg.map((argInArray) => this.parseArg(argInArray))
     } else if (arg instanceof Reference) {
-      return {
+      /** @type {Record<string, any>} */
+      const referencePayload = {
         __scoundrel_object_id: arg.id,
         __scoundrel_type: "reference"
       }
+
+      if (arg.instanceId) {
+        referencePayload.__scoundrel_instance_id = arg.instanceId
+      }
+
+      return referencePayload
     } else if (this.isPlainObject(arg)) {
       /** @type {Record<any, any>} */
       const newObject = {}
@@ -859,7 +872,7 @@ export default class Client {
     if (!withReference) return result.response
 
     const id = result.response
-    const spawnedReference = this.spawnReference(id)
+    const spawnedReference = this.spawnReference(id, result.instance_id)
 
     return returnProxy ? referenceProxy(spawnedReference) : spawnedReference
   }
@@ -988,10 +1001,11 @@ export default class Client {
   /**
    * Spawns a new reference to an object
    * @param {string} id Reference identifier
+   * @param {string | undefined} [instanceId] Owning instance identifier
    * @returns {Reference} Reference instance
    */
-  spawnReference(id) {
-    const reference = new Reference(this, id)
+  spawnReference(id, instanceId) {
+    const reference = new Reference(this, id, instanceId)
 
     this.references[id] = reference
 

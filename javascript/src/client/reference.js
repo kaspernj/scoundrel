@@ -7,10 +7,12 @@ export default class Reference {
    * Creates a new Reference
    * @param {any} client The client instance
    * @param {string} id The reference ID
+   * @param {string | undefined} [instanceId] Owning instance identifier
    */
-  constructor(client, id) {
+  constructor(client, id, instanceId) {
     this.client = client
     this.id = id
+    this.instanceId = instanceId
 
     if (!id) throw new Error(`Invalid ID given: ${id}`)
   }
