@@ -83,6 +83,34 @@ describe("scoundrel - web-socket - javascript - server control", () => {
       )
     })
 
+    it("supports raw eval blocks that return a value", async () => {
+      await runWithWebSocketServerClient(
+        async ({serverClient}) => {
+          const result = await serverClient.evalResult(`
+            const value = 5
+            return value * 2
+          `)
+
+          expect(result).toEqual(10)
+        },
+        {enableServerControl: true}
+      )
+    })
+
+    it("awaits async eval blocks and returns the resolved value", async () => {
+      await runWithWebSocketServerClient(
+        async ({serverClient}) => {
+          const result = await serverClient.evalResult(`
+            const value = await Promise.resolve(7)
+            return value + 1
+          `)
+
+          expect(result).toEqual(8)
+        },
+        {enableServerControl: true}
+      )
+    })
+
     it("returns references when evalReference is used", async () => {
       await runWithWebSocketServerClient(
         async ({serverClient}) => {
