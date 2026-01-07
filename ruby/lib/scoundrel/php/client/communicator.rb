@@ -145,14 +145,19 @@ private
 
   # Parses special hashes to proxy-objects and leaves the rest. This is used automatically.
   def read_parsed_data(data)
-    if data.is_a?(Array) && data.length == 2 && data[0] == "proxyobj"
+    if data.is_a?(Array) && data[0] == "proxyobj"
       id = data[1].to_i
+      instance_id = data[2]
+
+      if instance_id && @php_process.instance_id && instance_id != @php_process.instance_id
+        return data
+      end
 
       if (proxy_obj = @objects_handler.find_by_id(id))
         $stderr.print "Reuse proxy-obj!\n" if @debug
         return proxy_obj
       else
-        return @objects_handler.spawn_by_id(id)
+        return @objects_handler.spawn_by_id(id, instance_id)
       end
     elsif data.is_a?(Hash)
       newdata = {}

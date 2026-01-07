@@ -6,10 +6,11 @@ require "string-cases"
 require "thread"
 require "timeout"
 require "rbconfig"
+require "securerandom"
 
 #This class can communicate with another Ruby-process. It tries to integrate the work in the other process as seamless as possible by using proxy-objects.
 class Scoundrel::Ruby::Client
-  attr_reader :finalize_count, :pid
+  attr_reader :finalize_count, :pid, :instance_id
 
   #Require all the different commands.
   dir = "#{__dir__}/cmds"
@@ -66,6 +67,8 @@ class Scoundrel::Ruby::Client
     #Send ID is used to identify the correct answers.
     @send_mutex = Mutex.new
     @send_count = 0
+
+    @instance_id = SecureRandom.uuid
 
     #The PID is used to know which process proxy-objects belongs to.
     @my_pid = Process.pid
@@ -303,14 +306,14 @@ private
   end
 
   #Registers an object ID as a proxy-object on the host-side.
-  def proxyobj_get(id, pid = @my_pid)
+  def proxyobj_get(id, pid = @my_pid, instance_id = @instance_id)
     if proxy_obj = @proxy_objs.get(id)
       debug "Reuse proxy-obj (ID: #{id}, PID: #{pid}, fID: #{proxy_obj.args[:id]}, fPID: #{proxy_obj.args[:pid]})\n" if @debug
       return proxy_obj
     end
 
     @proxy_objs_unsets.delete(id)
-    proxy_obj = Scoundrel::Ruby::ProxyObject.new(self, id, pid)
+    proxy_obj = Scoundrel::Ruby::ProxyObject.new(self, id, pid, instance_id)
     @proxy_objs[id] = proxy_obj
     @proxy_objs_ids[proxy_obj.__id__] = id
     ObjectSpace.define_finalizer(proxy_obj, method(:proxyobj_finalizer))
@@ -376,7 +379,7 @@ private
             raise e
           end
         elsif type == :proxy_obj && id = answer[:id] and pid = answer[:pid]
-          return proxyobj_get(id, pid)
+          return proxyobj_get(id, pid, answer[:instance_id])
         elsif type == :proxy_block_call and block = answer[:block] and args = answer[:args] and queue = answer[:queue]
           #Calls the block. This is used to call the block from the same thread that the answer is being read from. This can cause problems in Hayabusa, that uses thread-variables to determine output and such.
           block.call(*args)

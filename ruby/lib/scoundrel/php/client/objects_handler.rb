@@ -41,13 +41,14 @@ class Scoundrel::Php::Client::ObjectsHandler
     @objects.get(id)
   end
 
-  def spawn_by_id(id)
+  def spawn_by_id(id, instance_id = nil)
     $stderr.print "Spawn new proxy-obj!\n" if @debug
     proxy_obj = ::Scoundrel::Php::Client::ProxyObject.new(
       php_process: @php_process,
       objects_handler: self,
       communicator: @communicator,
-      id: id
+      id: id,
+      instance_id: instance_id
     )
     @objects[id] = proxy_obj
   end

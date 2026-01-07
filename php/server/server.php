@@ -29,8 +29,9 @@ class php_process{
     $this->proxy_to_func = array("call_created_func", "constant_val", "create_func", "func", "get_var", "memory_info", "object_cache_info", "object_call", "require_once_path", "set_var", "static_method_call", "unset_ids");
     $this->func_specials = array("constant", "define", "die", "echo", "exit", "require", "require_once", "include", "include_once");
     $this->send_count = 0;
+    $this->instance_id = uniqid("scoundrel_", true);
 
-    print "php_script_ready:" . getmypid() . "\n";
+    print "php_script_ready:" . getmypid() . ":" . $this->instance_id . "\n";
   }
 
   //Starts listening in stdin for new instructions. Calls 'handle_line' for every line gotten.
@@ -110,7 +111,7 @@ class php_process{
         $this->objects_spl[$spl] = $id;
       }
 
-      $ret = array("proxyobj", $id);
+      $ret = array("proxyobj", $id, $this->instance_id);
       return $ret;
     }else{
       return $data;
@@ -120,6 +121,10 @@ class php_process{
   //Recursivly read the given data from the Ruby-side. Changing special arrays into the objects they refer to.
   function read_parsed_data($data){
     if (is_array($data) and array_key_exists("type", $data) and $data["type"] == "proxyobj" and array_key_exists("id", $data)){
+      if (array_key_exists("instance_id", $data) && $data["instance_id"] !== $this->instance_id){
+        return $data;
+      }
+
       $object = $this->objects[$data["id"]]["obj"];
       if (!$object){
         throw new exception("No object by that ID: " . $data["id"]);

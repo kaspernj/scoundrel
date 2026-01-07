@@ -1,14 +1,14 @@
 #This class handels the calling of methods on objects in the other process seamlessly.
 class Scoundrel::Ruby::ProxyObject
   #Hash that contains various information about the proxyobj.
-  attr_reader :__rp_rp, :__rp_id, :__rp_pid
+  attr_reader :__rp_rp, :__rp_id, :__rp_pid, :__rp_instance_id
 
   #Constructor. This should not be called manually but through a running 'RubyProcess'.
   #===Examples
   # proxy_obj = rp.new(:String, "Kasper") #=> <RubyProcess::ProxyObject>
   # proxy_obj = rp.static(:File, :open, "/tmp/somefile") #=> <RubyProcess::ProxyObject>
-  def initialize(rp, id, pid)
-    @__rp_rp, @__rp_id, @__rp_pid = rp, id, pid
+  def initialize(rp, id, pid, instance_id)
+    @__rp_rp, @__rp_id, @__rp_pid, @__rp_instance_id = rp, id, pid, instance_id
   end
 
   #Returns the object as the real object transfered by using the marshal-lib.
@@ -21,7 +21,7 @@ class Scoundrel::Ruby::ProxyObject
 
   #Unsets all data on the object.
   def __rp_destroy
-    @__rp_id = nil, @__rp_rp = nil, @__rp_pid = nil
+    @__rp_id = nil, @__rp_rp = nil, @__rp_pid = nil, @__rp_instance_id = nil
   end
 
   #Overwrite certain convert methods.

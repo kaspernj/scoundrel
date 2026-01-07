@@ -28,5 +28,6 @@ Gem::Specification.new do |s|
   s.add_dependency "tsafe"
   s.add_dependency "wref"
 
+  s.add_development_dependency "rubocop"
   s.add_development_dependency "rexml"
 end

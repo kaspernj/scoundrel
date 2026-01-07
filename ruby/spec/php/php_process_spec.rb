@@ -153,6 +153,15 @@ describe "Scoundrel::Php::Client" do
     end
   end
 
+  it "does not resolve proxy objects from other PHP instances" do
+    Scoundrel::Php::Client.new do |php_one|
+      Scoundrel::Php::Client.new do |php_two|
+        proxy_obj = php_one.new("stdClass")
+        expect(php_two.func("is_array", proxy_obj)).to eq true
+      end
+    end
+  end
+
   it "should pass on normal output when mixed" do
     out = StringIO.new
     old_stdout = $stdout
