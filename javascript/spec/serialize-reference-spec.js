@@ -40,6 +40,25 @@ describe("serialize reference", () => {
     })
   })
 
+  it("serializes undefined reference values as null", async () => {
+    await runWithWebSocketServerClient(async ({client, serverClient}) => {
+      class UndefinedReturner {
+        method() {
+          return undefined
+        }
+      }
+
+      serverClient.registerClass("UndefinedReturner", UndefinedReturner)
+
+      const reference = await client.newObjectReference("UndefinedReturner")
+      const undefinedReference = await reference.callMethodReference("method")
+
+      const result = await undefinedReference.serialize()
+
+      expect(result).toBeNull()
+    })
+  })
+
   it("throws on unsupported types inside plain objects", async () => {
     await runWithWebSocketServerClient(async ({client, serverClient}) => {
       serverClient.registerObject("objectWithFunction", {ok: true, nope: () => "bad"})
