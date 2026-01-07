@@ -6,6 +6,8 @@
  * @returns {string} JSON string representation
  */
 export default function safeJSONStringify(value) {
+  if (typeof value === "undefined") return "null"
+
   const pathMap = new WeakMap()
 
   if (value && typeof value === "object") {
@@ -17,7 +19,6 @@ export default function safeJSONStringify(value) {
     const currentPath = key === "" ? parentPath : Array.isArray(this) ? `${parentPath}[${key}]` : `${parentPath}.${key}`
     const valType = typeof val
 
-    if (valType === "undefined") throw new Error(`Cannot serialize undefined at ${currentPath}`)
     if (valType === "function") throw new Error(`Cannot serialize function at ${currentPath}`)
     if (valType === "symbol") throw new Error(`Cannot serialize symbol at ${currentPath}`)
     if (valType === "bigint") throw new Error(`Cannot serialize bigint at ${currentPath}`)
@@ -45,7 +46,8 @@ export default function safeJSONStringify(value) {
   }
 
   try {
-    return JSON.stringify(value, replacer)
+    const json = JSON.stringify(value, replacer)
+    return typeof json === "undefined" ? "null" : json
   } catch (error) {
     if (error instanceof Error) throw error
     throw new Error(String(error))
