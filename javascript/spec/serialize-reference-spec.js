@@ -78,4 +78,31 @@ describe("serialize reference", () => {
       expect(caughtError?.message).toContain("value.nope")
     })
   })
+
+  it("throws when the reference resolves to a function", async () => {
+    await runWithWebSocketServerClient(async ({client, serverClient}) => {
+      class FunctionReturner {
+        method() {
+          return () => "bad"
+        }
+      }
+
+      serverClient.registerClass("FunctionReturner", FunctionReturner)
+
+      const reference = await client.newObjectReference("FunctionReturner")
+      const functionReference = await reference.callMethodReference("method")
+
+      /** @type {Error | undefined} */
+      let caughtError
+      try {
+        await functionReference.serialize()
+      } catch (error) {
+        caughtError = error instanceof Error ? error : new Error(String(error))
+      }
+
+      expect(caughtError).toBeInstanceOf(Error)
+      expect(caughtError?.message).toContain("function")
+      expect(caughtError?.message).toContain("value")
+    })
+  })
 })

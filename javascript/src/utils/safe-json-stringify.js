@@ -8,6 +8,22 @@
 export default function safeJSONStringify(value) {
   if (typeof value === "undefined") return "null"
 
+  const valueType = typeof value
+  if (valueType === "function") throw new Error("Cannot serialize function at value")
+  if (valueType === "symbol") throw new Error("Cannot serialize symbol at value")
+  if (valueType === "bigint") throw new Error("Cannot serialize bigint at value")
+  if (valueType === "number" && !Number.isFinite(value)) {
+    throw new Error("Cannot serialize non-finite number at value")
+  }
+
+  if (value && valueType === "object") {
+    const prototype = Object.getPrototypeOf(value)
+    if (prototype !== Object.prototype && prototype !== null && !Array.isArray(value)) {
+      const constructorName = value.constructor && value.constructor.name ? value.constructor.name : "Object"
+      throw new Error(`Cannot serialize non-plain object '${constructorName}' at value`)
+    }
+  }
+
   const pathMap = new WeakMap()
 
   if (value && typeof value === "object") {
