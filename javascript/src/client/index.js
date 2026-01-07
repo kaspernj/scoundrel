@@ -508,7 +508,9 @@ export default class Client {
         const referenceId = data.reference_id
         const object = this.objects[referenceId]
 
-        if (!object) throw new Error(`No object by that ID: ${referenceId}`)
+        if (!Object.prototype.hasOwnProperty.call(this.objects, referenceId)) {
+          throw new Error(`No object by that ID: ${referenceId}`)
+        }
 
         const method = object[data.method_name]
 
@@ -542,7 +544,9 @@ export default class Client {
         const referenceId = data.reference_id
         const object = this.objects[referenceId]
 
-        if (!object) throw new Error(`No object by that ID: ${referenceId}`)
+        if (!Object.prototype.hasOwnProperty.call(this.objects, referenceId)) {
+          throw new Error(`No object by that ID: ${referenceId}`)
+        }
 
         const serialized = safeJSONStringify(object)
         this.respondToCommand(commandID, serialized)
@@ -552,7 +556,9 @@ export default class Client {
         const returnWith = data.with
         const object = this.objects[referenceId]
 
-        if (!object) throw new Error(`No object by that ID: ${referenceId}`)
+        if (!Object.prototype.hasOwnProperty.call(this.objects, referenceId)) {
+          throw new Error(`No object by that ID: ${referenceId}`)
+        }
 
         const attribute = object[attributeName]
 

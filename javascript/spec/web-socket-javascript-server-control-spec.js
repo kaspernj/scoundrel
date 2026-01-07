@@ -219,5 +219,24 @@ describe("scoundrel - web-socket - javascript - server control", () => {
         {enableServerControl: true}
       )
     })
+
+    it("serializes falsy reference values", async () => {
+      await runWithWebSocketServerClient(
+        async ({serverClient}) => {
+          const zeroRef = await serverClient.evalReference("return 0")
+          expect(await zeroRef.serialize()).toEqual(0)
+
+          const falseRef = await serverClient.evalReference("return false")
+          expect(await falseRef.serialize()).toEqual(false)
+
+          const emptyStringRef = await serverClient.evalReference("return ''")
+          expect(await emptyStringRef.serialize()).toEqual("")
+
+          const nullRef = await serverClient.evalReference("return null")
+          expect(await nullRef.serialize()).toEqual(null)
+        },
+        {enableServerControl: true}
+      )
+    })
   })
 })
