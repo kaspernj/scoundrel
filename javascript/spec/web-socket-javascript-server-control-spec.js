@@ -128,6 +128,26 @@ describe("scoundrel - web-socket - javascript - server control", () => {
       )
     })
 
+    it("runs async eval blocks only once", async () => {
+      await runWithWebSocketServerClient(
+        async ({client, serverClient}) => {
+          client.registerObject("counter", {count: 0})
+
+          const result = await serverClient.evalResult(`
+            await Promise.resolve()
+            counter.count += 1
+            return counter.count
+          `)
+
+          const finalCount = await serverClient.evalResult("counter.count")
+
+          expect(result).toEqual(1)
+          expect(finalCount).toEqual(1)
+        },
+        {enableServerControl: true}
+      )
+    })
+
     it("returns references when evalReference is used", async () => {
       await runWithWebSocketServerClient(
         async ({serverClient}) => {
