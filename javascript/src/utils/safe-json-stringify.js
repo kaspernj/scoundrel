@@ -8,6 +8,28 @@
 export default function safeJSONStringify(value) {
   if (typeof value === "undefined") return "null"
 
+  const valueType = typeof value
+  if (valueType === "function") throw new Error("Cannot serialize function at value")
+  if (valueType === "symbol") throw new Error("Cannot serialize symbol at value")
+  if (valueType === "number" && !Number.isFinite(value)) {
+    throw new Error("Cannot serialize non-finite number at value")
+  }
+  if (valueType === "bigint") {
+    const numberValue = Number(value)
+    if (!Number.isFinite(numberValue)) {
+      throw new Error("Cannot serialize non-finite number at value")
+    }
+    return JSON.stringify(numberValue)
+  }
+
+  if (value && valueType === "object") {
+    const prototype = Object.getPrototypeOf(value)
+    if (prototype !== Object.prototype && prototype !== null && !Array.isArray(value)) {
+      const constructorName = value.constructor && value.constructor.name ? value.constructor.name : "Object"
+      throw new Error(`Cannot serialize non-plain object '${constructorName}' at value`)
+    }
+  }
+
   const pathMap = new WeakMap()
 
   if (value && typeof value === "object") {
@@ -21,8 +43,14 @@ export default function safeJSONStringify(value) {
 
     if (valType === "function") throw new Error(`Cannot serialize function at ${currentPath}`)
     if (valType === "symbol") throw new Error(`Cannot serialize symbol at ${currentPath}`)
-    if (valType === "bigint") throw new Error(`Cannot serialize bigint at ${currentPath}`)
     if (valType === "number" && !Number.isFinite(val)) throw new Error(`Cannot serialize non-finite number at ${currentPath}`)
+    if (valType === "bigint") {
+      const numberValue = Number(val)
+      if (!Number.isFinite(numberValue)) {
+        throw new Error(`Cannot serialize non-finite number at ${currentPath}`)
+      }
+      return numberValue
+    }
 
     if (val === null) return val
 
@@ -46,8 +74,7 @@ export default function safeJSONStringify(value) {
   }
 
   try {
-    const json = JSON.stringify(value, replacer)
-    return typeof json === "undefined" ? "null" : json
+    return JSON.stringify(value, replacer)
   } catch (error) {
     if (error instanceof Error) throw error
     throw new Error(String(error))
