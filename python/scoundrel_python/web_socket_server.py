@@ -35,8 +35,11 @@ class WebSocketClient:
       data = json.loads(raw_data)
       command = data["command"]
       command_id = data["command_id"]
+      released_ids = data.get("released_reference_ids")
 
       self._debug(f"Data recieved as: {data}!")
+
+      self.release_references(released_ids)
 
       command_method = getattr(self, f"command_{command}", None)
 
@@ -201,6 +204,14 @@ class WebSocketClient:
     self.objects[object_id] = object
 
     return object_id
+
+  def release_references(self, released_ids):
+    if not isinstance(released_ids, list):
+      return
+
+    for reference_id in released_ids:
+      if reference_id in self.objects:
+        del self.objects[reference_id]
 
 
 class ScoundrelPythonServer:
