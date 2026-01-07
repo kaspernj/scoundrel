@@ -9,33 +9,34 @@ import uuid
 import websockets
 
 
-def debug(message):
-  print(message, flush=True)
-
-
 class WebSocketClient:
-  def __init__(self, ws):
+  def __init__(self, ws, debug=None):
     self.ws = ws
     self.running = True
     self.objects = {}
     self.objects_count = 0
     self.instance_id = uuid.uuid4().hex
-    debug("WebSocketClient initialized")
+    self._debug = debug or self._default_debug
+    self._debug("WebSocketClient initialized")
+
+  @staticmethod
+  def _default_debug(message):
+    print(message, flush=True)
 
   async def listen(self):
-    debug("Starting running loop")
+    self._debug("Starting running loop")
 
     while self.running:
-      debug("Waiting for new input")
+      self._debug("Waiting for new input")
       raw_data = await self.ws.recv()
 
-      debug(f"Raw data received: {raw_data}")
+      self._debug(f"Raw data received: {raw_data}")
 
       data = json.loads(raw_data)
       command = data["command"]
       command_id = data["command_id"]
 
-      debug(f"Data recieved as: {data}!")
+      self._debug(f"Data recieved as: {data}!")
 
       command_method = getattr(self, f"command_{command}", None)
 
@@ -56,7 +57,7 @@ class WebSocketClient:
     try:
       await command_method(command_id, data["data"])
     except Exception as error:
-      debug(f"ERROR: {error}")
+      self._debug(f"ERROR: {error}")
       await self.respond_with_error(command_id, str(error))
       raise
 
@@ -64,7 +65,7 @@ class WebSocketClient:
     data = {"command": "command_response", "command_id": command_id, "data": {"data": data}}
     data_json = json.dumps(data)
 
-    debug(f"Reply: {data_json}")
+    self._debug(f"Reply: {data_json}")
 
     await self.ws.send(data_json)
 
@@ -72,7 +73,7 @@ class WebSocketClient:
     data = {"command": "command_response", "command_id": command_id, "data": {"error": error}}
     data_json = json.dumps(data)
 
-    debug(f"Reply: {data_json}")
+    self._debug(f"Reply: {data_json}")
 
     await self.ws.send(data_json)
 
@@ -179,30 +180,46 @@ class WebSocketClient:
     return object_id
 
 
-async def handler(ws, path):
-  web_socket_client = WebSocketClient(ws)
-  await web_socket_client.listen()
+class ScoundrelPythonServer:
+  def __init__(self, host="127.0.0.1", port=53874, debug=None):
+    self.host = host
+    self.port = int(port)
+    self._debug = debug or self._default_debug
+
+  @staticmethod
+  def _default_debug(message):
+    print(message, flush=True)
+
+  async def handler(self, ws, path):
+    web_socket_client = WebSocketClient(ws, debug=self._debug)
+    await web_socket_client.listen()
+
+  def run(self):
+    start_server = websockets.serve(self.handler, self.host, self.port)
+
+    self._debug(f"Started with PID {os.getpid()} on {self.host}:{self.port}")
+
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(start_server)
+    loop.run_forever()
+
+  @classmethod
+  def from_argv(cls, argv=None):
+    parser = argparse.ArgumentParser(
+      prog="Scoundrel Python Server",
+      description="Handles Python code dynamically",
+      epilog="Have fun :-)"
+    )
+    parser.add_argument("--host", default="127.0.0.1")
+    parser.add_argument("--port", default="53874")
+
+    args = parser.parse_args(argv)
+
+    return cls(host=args.host, port=args.port)
 
 
 def main(argv=None):
-  parser = argparse.ArgumentParser(
-    prog="Scoundrel Python Server",
-    description="Handles Python code dynamically",
-    epilog="Have fun :-)"
-  )
-  parser.add_argument("--host", default="127.0.0.1")
-  parser.add_argument("--port", default="53874")
-
-  args = parser.parse_args(argv)
-  port = int(args.port)
-
-  start_server = websockets.serve(handler, args.host, port)
-
-  debug(f"Started with PID {os.getpid()} on {args.host}:{port}")
-
-  loop = asyncio.get_event_loop()
-  loop.run_until_complete(start_server)
-  loop.run_forever()
+  ScoundrelPythonServer.from_argv(argv).run()
 
 
 if __name__ == "__main__":

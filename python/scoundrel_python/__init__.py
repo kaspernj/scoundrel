@@ -1,3 +1,3 @@
-from .web_socket_server import WebSocketClient, main
+from .web_socket_server import ScoundrelPythonServer, WebSocketClient, main
 
-__all__ = ["WebSocketClient", "main"]
+__all__ = ["ScoundrelPythonServer", "WebSocketClient", "main"]
