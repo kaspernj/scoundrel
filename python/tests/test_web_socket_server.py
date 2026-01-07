@@ -98,6 +98,25 @@ def test_server_parses_arguments():
   assert server.port == 5555
 
 
+def test_read_attribute_value_for_sequences():
+  ws = DummyWebSocket()
+  client = WebSocketClient(ws)
+
+  assert client.read_attribute_value(["a", "b"], 1) == "b"
+  assert client.read_attribute_value(["a", "b"], "0") == "a"
+  assert client.read_attribute_value(["a", "b"], "length") == 2
+
+
+def test_read_attribute_value_for_dicts():
+  ws = DummyWebSocket()
+  client = WebSocketClient(ws)
+  payload = {"name": "Scoundrel", 1: "one"}
+
+  assert client.read_attribute_value(payload, "name") == "Scoundrel"
+  assert client.read_attribute_value(payload, 1) == "one"
+  assert client.read_attribute_value(payload, "length") == 2
+
+
 @pytest.mark.asyncio
 async def test_command_new_object_with_reference_passes_args():
   ws = DummyWebSocket()

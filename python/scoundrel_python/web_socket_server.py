@@ -127,7 +127,7 @@ class WebSocketClient:
     with_string = data["with"]
     object = self.objects[reference_id]
 
-    result = getattr(object, attribute_name)
+    result = self.read_attribute_value(object, attribute_name)
 
     if with_string == "reference":
       object_id = self.spawn_object(result)
@@ -148,6 +148,29 @@ class WebSocketClient:
     object = self.objects[reference_id]
 
     await self.respond_to_command(command_id, json.dumps(object))
+
+  def read_attribute_value(self, object, attribute_name):
+    if isinstance(object, (list, tuple)):
+      index = self.parse_index(attribute_name)
+      if index is not None:
+        return object[index]
+      if attribute_name == "length":
+        return len(object)
+    elif isinstance(object, dict):
+      if attribute_name in object:
+        return object[attribute_name]
+      if attribute_name == "length":
+        return len(object)
+
+    return getattr(object, attribute_name)
+
+  @staticmethod
+  def parse_index(attribute_name):
+    if isinstance(attribute_name, int):
+      return attribute_name
+    if isinstance(attribute_name, str) and attribute_name.isdigit():
+      return int(attribute_name)
+    return None
 
   def parse_arg(self, arg):
     if type(arg).__name__ in ("list", "tuple"):
