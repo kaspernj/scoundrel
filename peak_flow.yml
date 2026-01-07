@@ -1,6 +1,6 @@
 rvm: true
 before_install:
-  - sudo apt-get update && sudo apt-get install -y composer php-cli python3-pip python3-venv
+  - sudo apt-get update && sudo apt-get install -y composer php-cli python3-pip python3-venv python3-websockets
 environment:
   RUBY_VERSION: 3.2.9
 builds:
