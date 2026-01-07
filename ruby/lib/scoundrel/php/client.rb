@@ -12,6 +12,7 @@ require "string-cases"
 # print "PID of PHP-process: #{php.func("getmypid")}\n"
 # print "Explode test: #{php.func("explode", ";", "1;2;3;4;5")}\n"
 class Scoundrel::Php::Client
+  attr_reader :instance_id
   # Autoloader for subclasses.
   def self.const_missing(name)
     path = "#{__dir__}/client/#{::StringCases.camel_to_snake(name)}.rb"
@@ -155,7 +156,9 @@ class Scoundrel::Php::Client
   # Parses argument-data into special hashes that can be used on the PHP-side. It is public because the proxy-objects uses it. Normally you would never use it.
   def parse_data(data)
     if data.is_a?(Scoundrel::Php::Client::ProxyObject)
-      return {type: :proxyobj, id: data.args[:id]}
+      parsed = {type: :proxyobj, id: data.args[:id]}
+      parsed[:instance_id] = data.args[:instance_id] if data.args[:instance_id]
+      return parsed
     elsif data.is_a?(Scoundrel::Php::Client::CreatedFunction)
       return {type: :php_process_created_function, id: data.args[:id]}
     elsif data.is_a?(Hash)
@@ -240,7 +243,12 @@ private
     @stdout.each_line do |line|
       puts "Line: #{line}" if @debug
 
-      if line =~ /^php_script_ready:(\d+)\n/
+      if (match = line.match(/^php_script_ready:(\d+):([^\s]+)\n/))
+        @instance_id = match[2]
+        started = true
+        break
+      elsif line =~ /^php_script_ready:(\d+)\n/
+        @instance_id = Regexp.last_match(1)
         started = true
         break
       end
