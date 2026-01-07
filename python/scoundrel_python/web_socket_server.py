@@ -37,13 +37,13 @@ class WebSocketClient:
 
       debug(f"Data recieved as: {data}!")
 
-      command_method = getattr(self, f"command_{command}")
+      command_method = getattr(self, f"command_{command}", None)
 
       if command_method:
         thread = threading.Thread(target=self.run_command_in_thread, args=(command_method, command_id, data))
         thread.start()
       else:
-        self.respond_with_error(command_id, f"No such command {command}")
+        await self.respond_with_error(command_id, f"No such command {command}")
 
   def run_command_in_thread(self, command_method, command_id, data):
     loop = asyncio.new_event_loop()
@@ -78,12 +78,13 @@ class WebSocketClient:
 
   async def command_new_object_with_reference(self, command_id, data):
     class_name = data["class_name"]
+    args = self.parse_arg(data.get("args", []))
 
     if class_name == "[]":
-      instance = []
+      instance = list(args)
     else:
       klass = eval(class_name)
-      instance = klass()
+      instance = klass(*args)
 
     object_id = self.spawn_object(instance)
 
@@ -103,6 +104,8 @@ class WebSocketClient:
       response = object_id
     elif with_string == "result":
       response = result
+    else:
+      raise ValueError(f"Unknown return type: {with_string}")
 
     response_payload = {"response": response}
     if with_string == "reference":
@@ -130,6 +133,8 @@ class WebSocketClient:
       response = object_id
     elif with_string == "result":
       response = result
+    else:
+      raise ValueError(f"Unknown return type: {with_string}")
 
     response_payload = {"response": response}
     if with_string == "reference":
