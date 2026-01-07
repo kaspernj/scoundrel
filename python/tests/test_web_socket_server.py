@@ -6,8 +6,19 @@ from scoundrel_python.web_socket_server import WebSocketClient
 
 
 class DummyWebSocket:
-  def __init__(self):
+  def __init__(self, recv_messages=None):
     self.sent = []
+    self.recv_messages = list(recv_messages or [])
+    self.on_recv = None
+
+  async def recv(self):
+    if not self.recv_messages:
+      raise RuntimeError("No more messages")
+
+    if self.on_recv:
+      self.on_recv()
+
+    return self.recv_messages.pop(0)
 
   async def send(self, payload):
     self.sent.append(payload)
@@ -78,3 +89,97 @@ async def test_command_read_attribute_returns_reference():
   assert response["response"] == 2
   assert response["instance_id"] == client.instance_id
   assert client.objects[response["response"]] == [1, 2, 3]
+
+
+@pytest.mark.asyncio
+async def test_command_new_object_with_reference_passes_args():
+  ws = DummyWebSocket()
+  client = WebSocketClient(ws)
+
+  class Example:
+    def __init__(self, name, count):
+      self.name = name
+      self.count = count
+
+  import scoundrel_python.web_socket_server as server
+
+  server.Example = Example
+
+  await client.command_new_object_with_reference(9, {
+    "class_name": "Example",
+    "args": ["alpha", 3]
+  })
+
+  payload = json.loads(ws.sent[0])
+  object_id = payload["data"]["data"]["object_id"]
+  instance = client.objects[object_id]
+
+  assert instance.name == "alpha"
+  assert instance.count == 3
+
+
+@pytest.mark.asyncio
+async def test_command_call_method_on_reference_returns_result():
+  ws = DummyWebSocket()
+  client = WebSocketClient(ws)
+
+  class Example:
+    def __init__(self):
+      self.value = "ok"
+
+    def get_value(self):
+      return self.value
+
+  object_id = client.spawn_object(Example())
+
+  await client.command_call_method_on_reference(10, {
+    "args": [],
+    "method_name": "get_value",
+    "reference_id": object_id,
+    "with": "result"
+  })
+
+  payload = json.loads(ws.sent[0])
+  assert payload["data"]["data"]["response"] == "ok"
+
+
+@pytest.mark.asyncio
+async def test_command_call_method_on_reference_returns_reference():
+  ws = DummyWebSocket()
+  client = WebSocketClient(ws)
+
+  class Example:
+    def __init__(self):
+      self.items = [1, 2]
+
+    def get_items(self):
+      return self.items
+
+  object_id = client.spawn_object(Example())
+
+  await client.command_call_method_on_reference(11, {
+    "args": [],
+    "method_name": "get_items",
+    "reference_id": object_id,
+    "with": "reference"
+  })
+
+  payload = json.loads(ws.sent[0])
+  response = payload["data"]["data"]
+
+  assert response["response"] == 2
+  assert response["instance_id"] == client.instance_id
+  assert client.objects[response["response"]] == [1, 2]
+
+
+@pytest.mark.asyncio
+async def test_listen_rejects_unknown_command():
+  message = json.dumps({"command": "missing_command", "command_id": 12, "data": {}})
+  ws = DummyWebSocket([message])
+  client = WebSocketClient(ws)
+  ws.on_recv = lambda: setattr(client, "running", False)
+
+  await client.listen()
+
+  payload = json.loads(ws.sent[0])
+  assert payload["data"]["error"] == "No such command missing_command"
