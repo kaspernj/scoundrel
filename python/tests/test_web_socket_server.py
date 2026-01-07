@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from scoundrel_python.web_socket_server import WebSocketClient
+from scoundrel_python.web_socket_server import ScoundrelPythonServer, WebSocketClient
 
 
 class DummyWebSocket:
@@ -89,6 +89,13 @@ async def test_command_read_attribute_returns_reference():
   assert response["response"] == 2
   assert response["instance_id"] == client.instance_id
   assert client.objects[response["response"]] == [1, 2, 3]
+
+
+def test_server_parses_arguments():
+  server = ScoundrelPythonServer.from_argv(["--host", "127.0.0.1", "--port", "5555"])
+
+  assert server.host == "127.0.0.1"
+  assert server.port == 5555
 
 
 @pytest.mark.asyncio
