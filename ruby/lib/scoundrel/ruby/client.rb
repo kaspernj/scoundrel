@@ -68,7 +68,7 @@ class Scoundrel::Ruby::Client
     @send_mutex = Mutex.new
     @send_count = 0
 
-    @instance_id = SecureRandom.uuid
+    @instance_id = @args[:instance_id] || SecureRandom.uuid
 
     #The PID is used to know which process proxy-objects belongs to.
     @my_pid = Process.pid
@@ -94,6 +94,7 @@ class Scoundrel::Ruby::Client
     end
 
     cmd << " \"#{File.realpath(__dir__)}/../server/ruby_process_script.rb\" --pid=#{@my_pid}"
+    cmd << " \"--instance-id=#{@instance_id}\""
     cmd << " --debug" if @args[:debug]
     cmd << " \"--title=#{@args[:title]}\"" unless @args[:title].to_s.strip.empty?
 
