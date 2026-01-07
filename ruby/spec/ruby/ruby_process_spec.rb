@@ -143,6 +143,38 @@ describe "RubyProcess" do
     expect(res).to eq 10
   end
 
+  it "reads instance variables via read_attribute" do
+    rp.str_eval("
+      class ::AttrTest
+        def initialize
+          @name = \"Ruby\"
+        end
+      end
+
+      nil
+    ")
+
+    obj = rp.new(:AttrTest)
+
+    expect(obj.read_attribute(:name).__rp_marshal).to eq "Ruby"
+  end
+
+  it "reads hash keys via read_attribute" do
+    hash = rp.new(:Hash)
+    hash[:foo] = "bar"
+
+    expect(hash.read_attribute(:foo).__rp_marshal).to eq "bar"
+    expect(hash.read_attribute("foo").__rp_marshal).to eq "bar"
+  end
+
+  it "reads hash keys via read_attribute when key is a proxy object" do
+    hash = rp.new(:Hash)
+    key = rp.new(:String, "proxy-key")
+    hash[key] = "value"
+
+    expect(hash.read_attribute(key).__rp_marshal).to eq "value"
+  end
+
   it "should clean itself" do
     rp.garbage_collect
     GC.start
