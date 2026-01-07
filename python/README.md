@@ -42,6 +42,10 @@ Supported commands include:
 
 References are tracked by object IDs and include instance IDs to avoid cross-process collisions.
 
+## JavaScript proxy compatibility
+
+JavaScript proxy references expect to access list/tuple items by numeric index and read a `length` attribute for sequences and dictionaries. The Python server implements these behaviors so JS proxy tests can use `arrayProxy[0]` and `arrayProxy.length` against Python lists, tuples, and dicts.
+
 ## Testing
 
 ```bash
