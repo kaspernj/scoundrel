@@ -7,17 +7,17 @@ builds:
   build_1:
     name: Ruby
     script:
-      - cd ruby && bundle && bundle exec rspec
+      - cd ruby && bundle && bundle exec rspec --format documentation --profile 10
   build_2:
     name: PHP
     script:
       - cd php && composer install
-      - cd php && vendor/bin/phpunit
+      - cd php && vendor/bin/phpunit --testdox
   build_3:
     name: JavaScript
     script:
       - cd javascript && npm install
-      - cd javascript && NODE_OPTIONS=--expose-gc npm test
+      - cd javascript && NODE_OPTIONS=--expose-gc npm test -- --random=false
       - cd javascript && npm run lint
       - cd javascript && npm run typecheck
   build_4:
@@ -26,6 +26,6 @@ builds:
       - sudo apt-get update && sudo apt-get install -y python3-venv
       - cd python && python3 -m venv .venv
       - cd python && . .venv/bin/activate && pip install -e ".[dev]"
-      - cd python && . .venv/bin/activate && pytest
+      - cd python && . .venv/bin/activate && pytest -vv --durations=10
       - cd python && . .venv/bin/activate && mypy scoundrel_python server tests
       - cd python && . .venv/bin/activate && ruff check .
