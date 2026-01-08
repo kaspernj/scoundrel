@@ -56,4 +56,52 @@ describe("reference releases", () => {
       expect(churn.length).toBe(2000)
     })
   })
+
+  it("releases callback references after GC when supported", async () => {
+    if (!canForceGc()) return
+
+    await runWithWebSocketServerClient(async ({client, serverClient}) => {
+      const eventTarget = {
+        listener: null,
+        addEventListener(_name, callback) {
+          this.listener = callback
+        },
+        removeEventListener() {
+          this.listener = null
+        }
+      }
+
+      serverClient.registerObject("eventTarget", eventTarget)
+
+      const targetRef = await client.getObjectReference("eventTarget")
+      const handler = () => {}
+
+      await targetRef.callMethodResult("addEventListener", "onTestEvent", handler)
+
+      const functionIds = Object.keys(client.objects).map((id) => Number(id))
+      expect(functionIds.length).toBe(1)
+
+      const functionId = functionIds[0]
+      expect(client.objects[functionId]).toBeDefined()
+
+      await targetRef.callMethodResult("removeEventListener", "onTestEvent")
+
+      let released = false
+      for (let attempt = 0; attempt < 20; attempt += 1) {
+        globalThis.gc()
+        await new Promise((resolve) => setImmediate(resolve))
+
+        await client.getObjectResult("Math")
+
+        if (!client.objects[functionId]) {
+          released = true
+          break
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, 25))
+      }
+
+      expect(released).toBeTrue()
+    })
+  })
 })

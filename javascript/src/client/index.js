@@ -818,8 +818,11 @@ export default class Client {
 
       if (arg.__scoundrel_type === "function") {
         const functionId = arg.__scoundrel_function_id
+        const functionWrapper = (...args) => this.callFunctionOnReference(functionId, ...args)
 
-        return (...args) => this.callFunctionOnReference(functionId, ...args)
+        this.trackFunctionWrapper(functionWrapper, functionId)
+
+        return functionWrapper
       }
 
       /** @type {Record<any, any>} */
@@ -1193,6 +1196,13 @@ export default class Client {
     } else {
       this.references[reference.id] = reference
     }
+  }
+
+  trackFunctionWrapper(functionWrapper, functionId) {
+    if (!this.supportsWeakReferences) return
+    if (functionId === undefined || functionId === null) return
+
+    this.referenceReleaseRegistry?.register(functionWrapper, functionId)
   }
 
   queueReleasedReference(referenceId) {
