@@ -27,5 +27,5 @@ builds:
       - cd python && python3 -m venv .venv
       - cd python && . .venv/bin/activate && pip install -e ".[dev]"
       - cd python && . .venv/bin/activate && pytest
-      - cd python && . .venv/bin/activate && mypy scoundrel_python server/web-socket.py
-      - cd python && . .venv/bin/activate && ruff check scoundrel_python server
+      - cd python && . .venv/bin/activate && mypy scoundrel_python server tests
+      - cd python && . .venv/bin/activate && ruff check .

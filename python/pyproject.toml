@@ -26,9 +26,12 @@ include = ["scoundrel_python*"]
 
 [tool.mypy]
 python_version = "3.9"
+files = ["scoundrel_python", "server", "tests"]
 ignore_missing_imports = true
+no_site_packages = true
 warn_unused_configs = true
 
 [tool.ruff]
 target-version = "py38"
 line-length = 100
+extend-exclude = [".venv", "scoundrel_python.egg-info"]

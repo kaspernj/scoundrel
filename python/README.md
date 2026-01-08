@@ -141,6 +141,6 @@ python3 -m venv .venv
 . .venv/bin/activate
 pip install -e ".[dev]"
 pytest
-mypy scoundrel_python server/web-socket.py
-ruff check scoundrel_python server
+mypy scoundrel_python server tests
+ruff check .
 ```
