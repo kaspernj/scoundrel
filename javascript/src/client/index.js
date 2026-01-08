@@ -169,6 +169,24 @@ export default class Client {
   }
 
   /**
+   * Calls a function reference and returns the result directly
+   * @param {number} referenceId Reference identifier
+   * @param  {...any} args Arguments to pass to the function
+   * @returns {Promise<any>} Result from the function call
+   */
+  async callFunctionOnReference(referenceId, ...args) {
+    const result = await this.sendCommand("call_function_on_reference", {
+      args: this.parseFunctionArgs(args),
+      reference_id: referenceId,
+      with: "result"
+    })
+
+    if (!result) throw new Error("Blank result given")
+
+    return result.response
+  }
+
+  /**
    * Calls a method on a reference and returns a new reference
    * @param {number} referenceId Reference identifier
    * @param {string} methodName Method name to invoke
@@ -478,6 +496,43 @@ export default class Client {
           logger.log(() => [`Resolving command ${commandID} with data`, data])
           savedCommand.resolve(data.data)
         }
+      } else if (command == "call_function_on_reference") {
+        const referenceId = data.reference_id
+        const func = this.objects[referenceId]
+
+        if (!Object.prototype.hasOwnProperty.call(this.objects, referenceId)) {
+          throw new Error(`No object by that ID: ${referenceId}`)
+        }
+
+        if (typeof func !== "function") {
+          throw new Error(`No function by that ID: ${referenceId}`)
+        }
+
+        const respondWithValue = (responseValue) => {
+          if (data.with == "reference") {
+            const objectId = ++this.objectsCount
+
+            this.objects[objectId] = responseValue
+            this.respondToCommand(commandID, {response: objectId, instance_id: this.instanceId})
+          } else {
+            this.respondToCommand(commandID, {response: responseValue})
+          }
+        }
+
+        const parsedArgs = this.parseIncomingArgs(data.args, {allowRemoteReferences: true})
+        const response = func(...parsedArgs)
+
+        if (response && typeof response.then == "function") {
+          response.then(respondWithValue).catch((promiseError) => {
+            if (promiseError instanceof Error) {
+              this.send({command: "command_response", command_id: commandID, error: promiseError.message, errorStack: promiseError.stack})
+            } else {
+              this.send({command: "command_response", command_id: commandID, error: String(promiseError)})
+            }
+          })
+        } else {
+          respondWithValue(response)
+        }
       } else if (!this.serverControlEnabled) {
         this.send({command: "command_response", command_id: commandID, error: "Server control is disabled"})
         return
@@ -509,7 +564,7 @@ export default class Client {
 
           if (!ClassInstance) throw new Error(`No such class: ${className}`)
 
-          object = new ClassInstance(...data.args)
+          object = new ClassInstance(...this.parseIncomingArgs(data.args))
         } else {
           throw new Error(`Don't know how to handle class name: ${typeof className}`)
         }
@@ -541,7 +596,8 @@ export default class Client {
           }
         }
 
-        const response = method.call(object, ...data.args)
+        const parsedArgs = this.parseIncomingArgs(data.args)
+        const response = method.call(object, ...parsedArgs)
 
         if (response && typeof response.then == "function") {
           response.then(respondWithValue).catch((promiseError) => {
@@ -693,6 +749,16 @@ export default class Client {
   parseArg(arg) {
     if (Array.isArray(arg)) {
       return arg.map((argInArray) => this.parseArg(argInArray))
+    } else if (typeof arg === "function") {
+      const functionId = ++this.objectsCount
+
+      this.objects[functionId] = arg
+
+      return {
+        __scoundrel_function_id: functionId,
+        __scoundrel_instance_id: this.instanceId,
+        __scoundrel_type: "function"
+      }
     } else if (arg instanceof Reference) {
       /** @type {Record<string, any>} */
       const referencePayload = {
@@ -716,6 +782,104 @@ export default class Client {
       }
 
       return newObject
+    }
+
+    return arg
+  }
+
+  /**
+   * Parses an argument payload received from the server
+   * @param {any} arg Argument to parse
+   * @param {{allowRemoteReferences?: boolean}} [options] Parsing options
+   * @returns {any} Parsed argument
+   */
+  parseIncomingArg(arg, options = {}) {
+    if (Array.isArray(arg)) {
+      return arg.map((argInArray) => this.parseIncomingArg(argInArray, options))
+    } else if (this.isPlainObject(arg)) {
+      if (arg.__scoundrel_type === "reference") {
+        const instanceId = arg.__scoundrel_instance_id
+        const referenceId = arg.__scoundrel_object_id
+
+        if (instanceId === undefined || instanceId === this.instanceId) {
+          if (Object.prototype.hasOwnProperty.call(this.objects, referenceId)) {
+            return this.objects[referenceId]
+          }
+
+          return arg
+        }
+
+        if (options.allowRemoteReferences) {
+          return this.spawnReference(referenceId, instanceId)
+        }
+
+        return arg
+      }
+
+      if (arg.__scoundrel_type === "function") {
+        const functionId = arg.__scoundrel_function_id
+        const functionWrapper = (...args) => this.callFunctionOnReference(functionId, ...args)
+
+        this.trackFunctionWrapper(functionWrapper, functionId)
+
+        return functionWrapper
+      }
+
+      /** @type {Record<any, any>} */
+      const newObject = {}
+
+      for (const key in arg) {
+        newObject[key] = this.parseIncomingArg(arg[key], options)
+      }
+
+      return newObject
+    }
+
+    return arg
+  }
+
+  /**
+   * Parses an arguments array received from the server
+   * @param {any[]} args Arguments to parse
+   * @param {{allowRemoteReferences?: boolean}} [options] Parsing options
+   * @returns {any[]} Parsed arguments
+   */
+  parseIncomingArgs(args, options) {
+    if (!Array.isArray(args)) return []
+
+    return args.map((arg) => this.parseIncomingArg(arg, options))
+  }
+
+  /**
+   * Serializes arguments for a function callback
+   * @param {any[]} args Arguments to serialize
+   * @returns {any[]} Serialized arguments
+   */
+  parseFunctionArgs(args) {
+    return args.map((arg) => this.parseFunctionArg(arg))
+  }
+
+  /**
+   * Serializes an argument for a function callback
+   * @param {any} arg Argument to serialize
+   * @returns {any} Serialized argument payload
+   */
+  parseFunctionArg(arg) {
+    if (arg === null || arg === undefined) return arg
+
+    if (arg instanceof Reference) {
+      return this.parseArg(arg)
+    }
+
+    if (typeof arg === "object" || typeof arg === "function") {
+      const objectId = ++this.objectsCount
+      this.objects[objectId] = arg
+
+      return {
+        __scoundrel_object_id: objectId,
+        __scoundrel_instance_id: this.instanceId,
+        __scoundrel_type: "reference"
+      }
     }
 
     return arg
@@ -1032,6 +1196,13 @@ export default class Client {
     } else {
       this.references[reference.id] = reference
     }
+  }
+
+  trackFunctionWrapper(functionWrapper, functionId) {
+    if (!this.supportsWeakReferences) return
+    if (functionId === undefined || functionId === null) return
+
+    this.referenceReleaseRegistry?.register(functionWrapper, functionId)
   }
 
   queueReleasedReference(referenceId) {
