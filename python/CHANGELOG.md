@@ -1,7 +1,9 @@
 # Changelog
 
 ## Unreleased
+- Support JavaScript callback functions when invoking Python methods.
 - Align mypy target version with Python 3.8 support.
+- Pin mypy to a version that still supports Python 3.8.
 - Add type hints to the Python server classes and entrypoint.
 - Add mypy and ruff checks for Python linting and type checking.
 - Add instance IDs to references so only the owning Scoundrel instance resolves them.

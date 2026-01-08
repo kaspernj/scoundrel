@@ -134,6 +134,19 @@ const firstValue = await listRef.readAttributeResult(0)
 console.log(firstValue) // "value"
 ```
 
+## Callback arguments
+
+Python objects can accept JavaScript functions as callbacks. When the Python side calls the callback, arguments are delivered as references.
+
+```js
+const targetRef = await client.newObjectReference("CallbackTarget")
+
+await targetRef.callMethodResult("addEventListener", "onTestEvent", async (eventRef) => {
+  const event = await eventRef.serialize()
+  console.log("Event payload:", event)
+})
+```
+
 ## Testing
 
 ```bash
