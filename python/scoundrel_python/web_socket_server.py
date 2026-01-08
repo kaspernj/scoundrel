@@ -115,7 +115,11 @@ class WebSocketClient:
       self.loop
     )
 
-    return future.result()
+    result = future.result()
+    if isinstance(result, dict) and "response" in result:
+      return result["response"]
+
+    return result
 
   def run_command_in_thread(
     self,

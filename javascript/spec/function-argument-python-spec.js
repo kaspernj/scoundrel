@@ -48,15 +48,17 @@ describe("scoundrel - web-socket - python - function args", () => {
     const handler = (arg1) => {
       receivedArg = arg1
       resolveReceived()
+      return "handler-result"
     }
 
     await targetRef.callMethodResult("addEventListener", "onTestEvent", handler)
-    await targetRef.callMethodResult("trigger", "onTestEvent", {name: "Test"})
+    const result = await targetRef.callMethodResult("trigger", "onTestEvent", {name: "Test"})
     await receivedPromise
 
     expect(receivedArg).toBeInstanceOf(Reference)
 
     const serialized = await receivedArg.serialize()
     expect(serialized).toEqual({name: "Test"})
+    expect(result).toEqual("handler-result")
   })
 })
