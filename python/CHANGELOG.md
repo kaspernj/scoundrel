@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Improve CI test output formatting for easier timeout diagnosis.
 - Support JavaScript callback functions when invoking Python methods.
 - Return callback responses instead of raw response payloads for Python callback invocations.
 - Align mypy target version with Python 3.8 support.
