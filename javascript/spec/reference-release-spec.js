@@ -91,7 +91,7 @@ describe("reference releases", () => {
         globalThis.gc()
         await new Promise((resolve) => setImmediate(resolve))
 
-        await serverClient.getObjectResult("Math")
+        await client.getObjectResult("Math")
 
         if (!client.objects[functionId]) {
           released = true
