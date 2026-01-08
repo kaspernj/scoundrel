@@ -96,6 +96,19 @@ const config = await configRef.serialize()
 const configResult = await client.getObjectResult("config")
 ```
 
+## Callback arguments
+
+When you pass a function as an argument, the server can call it and any arguments passed to that callback are delivered as references. This makes it safe to access complex objects from the callback.
+
+```js
+const targetRef = await client.getObjectReference("eventTarget")
+
+await targetRef.callMethodResult("addEventListener", "onTestEvent", async (eventRef) => {
+  const event = await eventRef.serialize()
+  console.log("Event payload:", event)
+})
+```
+
 ## Serialization
 
 `Reference#serialize()` only supports JSON-safe values (strings, numbers, booleans, null, plain objects, and arrays). It throws an error if the value contains functions, symbols, bigints, class instances/non-plain objects, circular references, non-finite numbers, or other unsupported types.
