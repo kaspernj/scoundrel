@@ -10,6 +10,20 @@ from typing import Any, Awaitable, Callable, Dict, Optional, Sequence
 import websockets
 
 
+class CallbackTarget:
+  def __init__(self):
+    self.listeners = {}
+
+  def addEventListener(self, event_name, callback):
+    self.listeners[event_name] = callback
+
+  def trigger(self, event_name, payload):
+    callback = self.listeners.get(event_name)
+    if not callback:
+      raise ValueError(f"No listener for {event_name}")
+    return callback(payload)
+
+
 class WebSocketClient:
   def __init__(self, ws: Any, debug: Optional[Callable[[str], None]] = None) -> None:
     self.ws: Any = ws
@@ -17,6 +31,9 @@ class WebSocketClient:
     self.objects: Dict[int, Any] = {}
     self.objects_count: int = 0
     self.instance_id: str = uuid.uuid4().hex
+    self.loop: Optional[asyncio.AbstractEventLoop] = None
+    self.outgoing_commands: Dict[int, asyncio.Future] = {}
+    self.outgoing_commands_count: int = 0
     self._debug: Callable[[str], None] = debug or self._default_debug
     self._debug("WebSocketClient initialized")
 
@@ -26,6 +43,7 @@ class WebSocketClient:
 
   async def listen(self) -> None:
     self._debug("Starting running loop")
+    self.loop = asyncio.get_running_loop()
 
     while self.running:
       self._debug("Waiting for new input")
@@ -42,6 +60,9 @@ class WebSocketClient:
 
       self.release_references(released_ids)
 
+      if command == "command_response" and self.handle_command_response(data):
+        continue
+
       command_method = getattr(self, f"command_{command}", None)
 
       if command_method:
@@ -49,6 +70,56 @@ class WebSocketClient:
         thread.start()
       else:
         await self.respond_with_error(command_id, f"No such command {command}")
+
+  def handle_command_response(self, data: Dict[str, Any]) -> bool:
+    command_id = data.get("command_id")
+    if not isinstance(command_id, int):
+      return False
+
+    future = self.outgoing_commands.pop(command_id, None)
+    if not future:
+      return False
+
+    if data.get("error"):
+      future.set_exception(RuntimeError(data["error"]))
+      return True
+
+    payload = data.get("data") or {}
+    future.set_result(payload.get("data"))
+    return True
+
+  async def send_command(self, command: str, data: Dict[str, Any]) -> Any:
+    if self.loop is None:
+      raise RuntimeError("No event loop available for outgoing commands")
+
+    self.outgoing_commands_count += 1
+    command_id = self.outgoing_commands_count
+    future = self.loop.create_future()
+    self.outgoing_commands[command_id] = future
+
+    payload = {"command": command, "command_id": command_id, "data": data}
+    await self.ws.send(json.dumps(payload))
+
+    return await future
+
+  def call_function_on_reference(self, function_id: int, *args: Any) -> Any:
+    if self.loop is None:
+      raise RuntimeError("No event loop available for outgoing commands")
+
+    serialized_args = self.serialize_function_args(args)
+    future = asyncio.run_coroutine_threadsafe(
+      self.send_command(
+        "call_function_on_reference",
+        {"reference_id": function_id, "args": serialized_args, "with": "result"}
+      ),
+      self.loop
+    )
+
+    result = future.result()
+    if isinstance(result, dict) and "response" in result:
+      return result["response"]
+
+    return result
 
   def run_command_in_thread(
     self,
@@ -195,6 +266,12 @@ class WebSocketClient:
 
       return new_array
     elif isinstance(arg, dict):
+      if arg.get("__scoundrel_type") == "function":
+        function_id = arg.get("__scoundrel_function_id")
+        if not isinstance(function_id, int):
+          raise ValueError("Missing function reference ID")
+        return lambda *args: self.call_function_on_reference(function_id, *args)
+
       if arg.get("__scoundrel_type") == "reference":
         instance_id = arg.get("__scoundrel_instance_id")
         if instance_id is None or instance_id == self.instance_id:
@@ -208,6 +285,20 @@ class WebSocketClient:
       return new_dict
 
     return arg
+
+  def serialize_function_args(self, args: Sequence[Any]) -> Sequence[Any]:
+    return [self.serialize_function_arg(arg) for arg in args]
+
+  def serialize_function_arg(self, arg: Any) -> Any:
+    if arg is None or isinstance(arg, (str, int, float, bool)):
+      return arg
+
+    object_id = self.spawn_object(arg)
+    return {
+      "__scoundrel_object_id": object_id,
+      "__scoundrel_instance_id": self.instance_id,
+      "__scoundrel_type": "reference"
+    }
 
   def spawn_object(self, object: Any) -> int:
     self.objects_count += 1
