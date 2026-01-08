@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Add type hints to the Python server classes and entrypoint.
 - Add mypy and ruff checks for Python linting and type checking.
 - Add instance IDs to references so only the owning Scoundrel instance resolves them.
 - Add pip packaging metadata and pytest coverage for the Python server.
