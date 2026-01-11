@@ -80,11 +80,15 @@ const encodeValue = (value, path, seen) => {
 
   if (Array.isArray(value)) {
     if (seen.has(value)) throw new Error(`Cannot serialize circular reference at ${path}`)
-    seen.set(value, path)
-    return value.map((item, index) => {
-      const encoded = encodeValue(item, `${path}[${index}]`, seen)
-      return encoded === OMIT_VALUE ? null : encoded
-    })
+    seen.add(value)
+    try {
+      return value.map((item, index) => {
+        const encoded = encodeValue(item, `${path}[${index}]`, seen)
+        return encoded === OMIT_VALUE ? null : encoded
+      })
+    } finally {
+      seen.delete(value)
+    }
   }
 
   if (!isPlainObject(value)) {
@@ -97,20 +101,24 @@ const encodeValue = (value, path, seen) => {
 
 const encodeObject = (value, path, seen) => {
   if (seen.has(value)) throw new Error(`Cannot serialize circular reference at ${path}`)
-  seen.set(value, path)
+  seen.add(value)
 
-  /** @type {Record<string, any>} */
-  const encoded = {}
+  try {
+    /** @type {Record<string, any>} */
+    const encoded = {}
 
-  for (const key of Object.keys(value)) {
-    const childPath = `${path}.${key}`
-    const childValue = encodeValue(value[key], childPath, seen)
-    if (childValue !== OMIT_VALUE) {
-      encoded[key] = childValue
+    for (const key of Object.keys(value)) {
+      const childPath = `${path}.${key}`
+      const childValue = encodeValue(value[key], childPath, seen)
+      if (childValue !== OMIT_VALUE) {
+        encoded[key] = childValue
+      }
     }
-  }
 
-  return encoded
+    return encoded
+  } finally {
+    seen.delete(value)
+  }
 }
 
 const decodeValue = (value) => {
@@ -144,7 +152,7 @@ const decodeValue = (value) => {
  * @returns {string} JSON string representation
  */
 export function serializeScoundrelJSON(value) {
-  const encoded = encodeValue(value, "value", new WeakMap())
+  const encoded = encodeValue(value, "value", new WeakSet())
   return JSON.stringify(encoded)
 }
 
@@ -176,4 +184,3 @@ registerScoundrelType({
     return new RegExp(match[1], match[2])
   }
 })
-
