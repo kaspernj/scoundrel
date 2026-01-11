@@ -1,6 +1,7 @@
 // @ts-check
 
 import Logger from "../../../logger.js"
+import {parseScoundrelJSON, serializeScoundrelJSON} from "../../../utils/scoundrel-json.js"
 
 const logger = new Logger("Scoundrel WebSocket")
 
@@ -49,7 +50,7 @@ export default class WebSocket {
    * @param {MessageEvent} event WebSocket message event
    */
   onSocketMessage = (event) => {
-    const data = JSON.parse(event.data)
+    const data = parseScoundrelJSON(event.data)
 
     logger.log(() => ["Client::Connections::WebSocket onSocketMessage", data])
 
@@ -71,7 +72,7 @@ export default class WebSocket {
    * @param {Record<string, any>} data Payload to send
    */
   send(data) {
-    const sendData = JSON.stringify(data)
+    const sendData = serializeScoundrelJSON(data)
     logger.log(() => ["Sending", sendData])
 
     // @ts-ignore

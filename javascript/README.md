@@ -111,7 +111,7 @@ await targetRef.callMethodResult("addEventListener", "onTestEvent", async (event
 
 ## Serialization
 
-`Reference#serialize()` only supports JSON-safe values (strings, numbers, booleans, null, plain objects, and arrays). It throws an error if the value contains functions, symbols, bigints, class instances/non-plain objects, circular references, non-finite numbers, or other unsupported types.
+`Reference#serialize()` supports JSON-safe values plus Scoundrel JSON types. Dates and regex values are encoded as objects with a `__scoundrel_type__` key and a `value` string, and you can register additional types. It throws an error if the value contains functions, symbols, class instances without a registered handler, circular references, non-finite numbers, or other unsupported types.
 
 ## Stack trace sanitization
 

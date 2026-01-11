@@ -1,7 +1,6 @@
 import argparse
 import asyncio
 import importlib
-import json
 import os
 import threading
 import uuid
@@ -9,6 +8,8 @@ from typing import Any, Awaitable, Callable, Dict, Optional, Sequence
 
 import websockets
 
+from .scoundrel_json import dumps as scoundrel_json_dumps
+from .scoundrel_json import loads as scoundrel_json_loads
 
 class CallbackTarget:
   def __init__(self):
@@ -51,7 +52,7 @@ class WebSocketClient:
 
       self._debug(f"Raw data received: {raw_data}")
 
-      data = json.loads(raw_data)
+      data = scoundrel_json_loads(raw_data)
       command = data["command"]
       command_id = data["command_id"]
       released_ids = data.get("released_reference_ids")
@@ -98,7 +99,7 @@ class WebSocketClient:
     self.outgoing_commands[command_id] = future
 
     payload = {"command": command, "command_id": command_id, "data": data}
-    await self.ws.send(json.dumps(payload))
+    await self.ws.send(scoundrel_json_dumps(payload))
 
     return await future
 
@@ -148,7 +149,7 @@ class WebSocketClient:
 
   async def respond_to_command(self, command_id: int, data: Any) -> None:
     data = {"command": "command_response", "command_id": command_id, "data": {"data": data}}
-    data_json = json.dumps(data)
+    data_json = scoundrel_json_dumps(data)
 
     self._debug(f"Reply: {data_json}")
 
@@ -156,7 +157,7 @@ class WebSocketClient:
 
   async def respond_with_error(self, command_id: int, error: str) -> None:
     data = {"command": "command_response", "command_id": command_id, "data": {"error": error}}
-    data_json = json.dumps(data)
+    data_json = scoundrel_json_dumps(data)
 
     self._debug(f"Reply: {data_json}")
 
@@ -232,7 +233,7 @@ class WebSocketClient:
     reference_id = data["reference_id"]
     object = self.objects[reference_id]
 
-    await self.respond_to_command(command_id, json.dumps(object))
+    await self.respond_to_command(command_id, scoundrel_json_dumps(object))
 
   def read_attribute_value(self, object: Any, attribute_name: Any) -> Any:
     if isinstance(object, (list, tuple)):

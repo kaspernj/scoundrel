@@ -8,3 +8,4 @@
 - Ensure PHP fatal errors surface before destroyed errors in Ruby clients.
 - Add Ruby proxy attribute reads to match JavaScript reference support.
 - Add Ruby get_object to fetch constants by name, matching JavaScript getObject.
+- Add Scoundrel JSON serialization with Date/Regexp support and extensible type handlers.

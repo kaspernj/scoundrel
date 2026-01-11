@@ -1,7 +1,7 @@
-import json
-
 import pytest
 
+from scoundrel_python.scoundrel_json import dumps as scoundrel_json_dumps
+from scoundrel_python.scoundrel_json import loads as scoundrel_json_loads
 from scoundrel_python.web_socket_server import ScoundrelPythonServer, WebSocketClient
 
 
@@ -66,7 +66,7 @@ async def test_command_read_attribute_returns_result():
     "with": "result"
   })
 
-  payload = json.loads(ws.sent[0])
+  payload = scoundrel_json_loads(ws.sent[0])
   assert payload["command_id"] == 7
   assert payload["data"]["data"]["response"] == "Scoundrel"
 
@@ -83,7 +83,7 @@ async def test_command_read_attribute_returns_reference():
     "with": "reference"
   })
 
-  payload = json.loads(ws.sent[0])
+  payload = scoundrel_json_loads(ws.sent[0])
   response = payload["data"]["data"]
 
   assert response["response"] == 2
@@ -148,7 +148,7 @@ async def test_command_new_object_with_reference_passes_args():
     "args": ["alpha", 3]
   })
 
-  payload = json.loads(ws.sent[0])
+  payload = scoundrel_json_loads(ws.sent[0])
   object_id = payload["data"]["data"]["object_id"]
   instance = client.objects[object_id]
 
@@ -177,7 +177,7 @@ async def test_command_call_method_on_reference_returns_result():
     "with": "result"
   })
 
-  payload = json.loads(ws.sent[0])
+  payload = scoundrel_json_loads(ws.sent[0])
   assert payload["data"]["data"]["response"] == "ok"
 
 
@@ -202,7 +202,7 @@ async def test_command_call_method_on_reference_returns_reference():
     "with": "reference"
   })
 
-  payload = json.loads(ws.sent[0])
+  payload = scoundrel_json_loads(ws.sent[0])
   response = payload["data"]["data"]
 
   assert response["response"] == 2
@@ -212,12 +212,12 @@ async def test_command_call_method_on_reference_returns_reference():
 
 @pytest.mark.asyncio
 async def test_listen_rejects_unknown_command():
-  message = json.dumps({"command": "missing_command", "command_id": 12, "data": {}})
+  message = scoundrel_json_dumps({"command": "missing_command", "command_id": 12, "data": {}})
   ws = DummyWebSocket([message])
   client = WebSocketClient(ws)
   ws.on_recv = lambda: setattr(client, "running", False)
 
   await client.listen()
 
-  payload = json.loads(ws.sent[0])
+  payload = scoundrel_json_loads(ws.sent[0])
   assert payload["data"]["error"] == "No such command missing_command"

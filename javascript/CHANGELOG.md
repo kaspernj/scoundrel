@@ -9,3 +9,4 @@
 - Allow serializing reference values that resolve to undefined by returning null instead of throwing.
 - Serialize bigint values as numbers when serializing references.
 - Release remote references when proxies are garbage collected (when weak references are supported).
+- Add Scoundrel JSON serialization with Date/RegExp support and extensible type handlers.
