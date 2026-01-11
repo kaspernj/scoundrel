@@ -4,6 +4,7 @@ import Logger from "../logger.js"
 import Reference from "./reference.js"
 import referenceProxy from "./reference-proxy.js"
 import safeJSONStringify from "../utils/safe-json-stringify.js"
+import {parseScoundrelJSON} from "../utils/scoundrel-json.js"
 
 const logger = new Logger("Scoundrel Client")
 const generateInstanceId = () => {
@@ -1172,7 +1173,7 @@ export default class Client {
   async serializeReference(referenceId) {
     const json = await this.sendCommand("serialize_reference", {reference_id: referenceId})
 
-    return JSON.parse(json)
+    return parseScoundrelJSON(json)
   }
 
   /**

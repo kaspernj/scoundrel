@@ -1,5 +1,7 @@
 // @ts-check
 
+import {parseScoundrelJSON, serializeScoundrelJSON} from "../../../utils/scoundrel-json.js"
+
 export default class WebSocketClient {
   /**
    * Creates a new WebSocketClient
@@ -30,7 +32,7 @@ export default class WebSocketClient {
    * @param {string} rawData Raw message payload
    */
   onMessage = (rawData) => {
-    const data = JSON.parse(rawData)
+    const data = parseScoundrelJSON(rawData.toString())
 
     if (!this.onCommandCallback) throw new Error("Command callback hasn't been set")
 
@@ -41,6 +43,6 @@ export default class WebSocketClient {
    * @param {any} data Payload to send
    */
   async send(data) {
-    await this.ws.send(JSON.stringify(data))
+    await this.ws.send(serializeScoundrelJSON(data))
   }
 }

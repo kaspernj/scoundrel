@@ -88,6 +88,32 @@ describe("serialize reference", () => {
     })
   })
 
+  it("serializes date values", async () => {
+    await runWithWebSocketServerClient(async ({client, serverClient}) => {
+      const createdAt = new Date("2024-01-02T03:04:05.000Z")
+      serverClient.registerObject("dateObject", {createdAt})
+
+      const reference = await client.getObjectReference("dateObject")
+      const result = await reference.serialize()
+
+      expect(result.createdAt).toBeInstanceOf(Date)
+      expect(result.createdAt.toISOString()).toBe("2024-01-02T03:04:05.000Z")
+    })
+  })
+
+  it("serializes regex values", async () => {
+    await runWithWebSocketServerClient(async ({client, serverClient}) => {
+      serverClient.registerObject("regexObject", {matcher: /scoundrel/gi})
+
+      const reference = await client.getObjectReference("regexObject")
+      const result = await reference.serialize()
+
+      expect(result.matcher).toBeInstanceOf(RegExp)
+      expect(result.matcher.source).toBe("scoundrel")
+      expect(result.matcher.flags).toBe("gi")
+    })
+  })
+
   it("throws on unsupported types inside plain objects", async () => {
     await runWithWebSocketServerClient(async ({client, serverClient}) => {
       serverClient.registerObject("objectWithFunction", {ok: true, nope: () => "bad"})

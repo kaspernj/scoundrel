@@ -14,3 +14,4 @@
 - Move Python server entrypoint to class-based API.
 - Support list/dict indexing and length in read_attribute for JS proxy parity.
 - Clean up server-side references when JS clients release them.
+- Add Scoundrel JSON serialization with extensible Date/regex support for WebSocket payloads.
