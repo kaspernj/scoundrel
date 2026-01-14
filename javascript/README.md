@@ -48,6 +48,13 @@ const length = await array.length
 expect(length).toEqual(2)
 ```
 
+When you need a primitive (for comparisons, JSON, or string interpolation), serialize the proxy result first:
+
+```js
+const accountCount = await (await accountClass.count()).__serialize()
+expect(accountCount).toEqual(1)
+```
+
 `newObject`, `import`, and `getObject` return proxies by default; use `newObjectReference`/`newObjectResult`, `importReference`/`importResult`, and `getObjectReference`/`getObjectResult` when you need a `Reference` or serialized result.
 
 ```js
