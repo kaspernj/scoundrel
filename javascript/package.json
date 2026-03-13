@@ -32,7 +32,7 @@
   },
   "homepage": "https://github.com/kaspernj/scoundrel#readme",
   "devDependencies": {
-    "@eslint/js": "^9.39.2",
+    "@eslint/js": "^10.0.1",
     "@types/jasmine": "^6.0.0",
     "@types/node": "^25.0.2",
     "eslint": "^9.39.2",
