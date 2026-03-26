@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Prefer the repo-local `python/.venv` interpreter when JavaScript starts the Python WebSocket runner.
 - Improve CI test output formatting for easier timeout diagnosis.
 - Support JavaScript callback functions when invoking Python methods.
 - Return callback responses instead of raw response payloads for Python callback invocations.

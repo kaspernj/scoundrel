@@ -8,6 +8,17 @@ JavaScript client for running remote evaluations with Scoundrel.
 npm install scoundrel-remote-eval
 ```
 
+For the bundled Python WebSocket runner in this repo, create the Python virtualenv in `../python/.venv` and install the package there:
+
+```bash
+cd ../python
+python3 -m venv .venv
+. .venv/bin/activate
+pip install -e ".[dev]"
+```
+
+`PythonWebSocketRunner` prefers `../python/.venv/bin/python` when it exists and falls back to system `python3` otherwise.
+
 ## Usage
 
 ```js

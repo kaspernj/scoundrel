@@ -332,18 +332,18 @@ class ScoundrelPythonServer:
   def _default_debug(message: str) -> None:
     print(message, flush=True)
 
-  async def handler(self, ws: Any, path: str) -> None:
+  async def handler(self, ws: Any, path: Optional[str] = None) -> None:
+    del path
     web_socket_client = WebSocketClient(ws, debug=self._debug)
     await web_socket_client.listen()
 
   def run(self) -> None:
-    start_server = websockets.serve(self.handler, self.host, self.port)
+    asyncio.run(self.run_forever())
 
-    self._debug(f"Started with PID {os.getpid()} on {self.host}:{self.port}")
-
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(start_server)
-    loop.run_forever()
+  async def run_forever(self) -> None:
+    async with websockets.serve(self.handler, self.host, self.port):
+      self._debug(f"Started with PID {os.getpid()} on {self.host}:{self.port}")
+      await asyncio.Future()
 
   @classmethod
   def from_argv(cls, argv: Optional[Sequence[str]] = None) -> "ScoundrelPythonServer":
