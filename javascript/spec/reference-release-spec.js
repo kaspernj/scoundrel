@@ -8,6 +8,11 @@ describe("reference releases", () => {
     typeof globalThis.FinalizationRegistry === "function" &&
     typeof globalThis.gc === "function"
 
+  const createArrayReferenceId = async (client) => {
+    const arrayRef = await client.newObjectReference("Array")
+    return arrayRef.id
+  }
+
   const waitForRelease = async (client, serverClient, objectId) => {
     for (let attempt = 0; attempt < 20; attempt += 1) {
       globalThis.gc()
@@ -41,12 +46,7 @@ describe("reference releases", () => {
     if (!canForceGc()) return
 
     await runWithWebSocketServerClient(async ({client, serverClient}) => {
-      let objectId
-      {
-        const arrayRef = await client.newObjectReference("Array")
-        objectId = arrayRef.id
-      }
-
+      const objectId = await createArrayReferenceId(client)
       const churn = Array.from({length: 2000}, () => "x".repeat(512))
 
       const released = await waitForRelease(client, serverClient, objectId)
