@@ -10,6 +10,7 @@
     "moduleResolution": "nodenext",
     "module": "nodenext",
     "outDir": "build",
+    "rootDir": "src",
     "target": "ES2020",
     "types": ["jasmine", "node"]
   },
