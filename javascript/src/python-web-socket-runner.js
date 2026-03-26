@@ -1,8 +1,8 @@
 // @ts-check
 
 import {exec, spawn} from "child_process"
+import {access, realpath} from "fs/promises"
 import Logger from "./logger.js"
-import {realpath} from "fs/promises"
 
 const logger = new Logger("Scoundrel PythonWebSocketRunner")
 
@@ -31,13 +31,29 @@ export default class PythonWebSocketRunner {
   }
 
   async run() {
+    const pythonExecutable = await this.resolvePythonExecutable()
     const filePath = `${process.cwd()}/../python/server/web-socket.py`
     const fileRealPath = await realpath(filePath)
-    const child = spawn("python3", [fileRealPath])
+    const child = spawn(pythonExecutable, [fileRealPath])
 
     child.on("exit", this.onChildExit)
     child.stdout.on("data", this.onChildStdout)
     child.stderr.on("data", this.onChildStderr)
+  }
+
+  /**
+   * Prefers the repo-local Python virtualenv so JS tests use the checked-out package dependencies.
+   * @returns {Promise<string>} Python executable path
+   */
+  async resolvePythonExecutable() {
+    const virtualenvPythonPath = `${process.cwd()}/../python/.venv/bin/python`
+
+    try {
+      await access(virtualenvPythonPath)
+      return virtualenvPythonPath
+    } catch {
+      return "python3"
+    }
   }
 
   onProcessExit = () => {

@@ -8,6 +8,14 @@ Python server that powers Scoundrel remote evaluations over WebSockets.
 python3 -m pip install -e ".[dev]"
 ```
 
+When running the JavaScript specs from `../javascript`, `PythonWebSocketRunner` will prefer `python/.venv/bin/python` if that virtualenv exists. Creating the virtualenv inside this repo keeps the JS and Python test paths aligned:
+
+```bash
+python3 -m venv .venv
+. .venv/bin/activate
+pip install -e ".[dev]"
+```
+
 ## Run the server
 
 ```bash
