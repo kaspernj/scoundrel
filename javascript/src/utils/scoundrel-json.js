@@ -5,17 +5,30 @@ const VALUE_KEY = "value"
 const OMIT_VALUE = Symbol("omit_value")
 
 /** @typedef {{type: string, canSerialize: (value: any) => boolean, serialize: (value: any) => Record<string, any>, deserialize: (payload: Record<string, any>) => any}} ScoundrelTypeHandler */
+/** @typedef {null | boolean | number | string | any[] | Record<string, any>} SerializedValue */
 
 /** @type {ScoundrelTypeHandler[]} */
 const typeHandlers = []
 
+/**
+ * @param {any} value Value to inspect
+ * @returns {value is Record<string, any>} Whether the value is a plain object
+ */
 const isPlainObject = (value) => {
   if (!value || typeof value !== "object" || Array.isArray(value)) return false
   const prototype = Object.getPrototypeOf(value)
   return prototype === Object.prototype || prototype === null
 }
 
+/**
+ * @param {any} value Value to match against registered handlers
+ * @returns {ScoundrelTypeHandler | undefined} Matching handler.
+ */
 const findHandlerForValue = (value) => typeHandlers.find((handler) => handler.canSerialize(value))
+/**
+ * @param {string} type Type name to look up
+ * @returns {ScoundrelTypeHandler | undefined} Matching handler.
+ */
 const findHandlerForType = (type) => typeHandlers.find((handler) => handler.type === type)
 
 /**
@@ -38,6 +51,12 @@ export function registerScoundrelType(handler) {
   }
 }
 
+/**
+ * @param {ScoundrelTypeHandler} handler Type handler producing the payload
+ * @param {Record<string, any>} serialized Serialized payload
+ * @param {string} path Current value path
+ * @returns {Record<string, any>} Validated serialized payload
+ */
 const ensureSerializableObject = (handler, serialized, path) => {
   if (!isPlainObject(serialized)) {
     throw new Error(`Scoundrel type '${handler.type}' must serialize to a plain object at ${path}`)
@@ -50,6 +69,12 @@ const ensureSerializableObject = (handler, serialized, path) => {
   return serialized
 }
 
+/**
+ * @param {any} value Value to encode
+ * @param {string} path Current value path
+ * @param {WeakSet<object>} seen Seen objects for cycle detection
+ * @returns {SerializedValue | typeof OMIT_VALUE} Encoded value or omission marker
+ */
 const encodeValue = (value, path, seen) => {
   if (typeof value === "undefined") {
     return path === "value" ? null : OMIT_VALUE
@@ -99,6 +124,12 @@ const encodeValue = (value, path, seen) => {
   return encodeObject(value, path, seen)
 }
 
+/**
+ * @param {Record<string, any>} value Object to encode
+ * @param {string} path Current value path
+ * @param {WeakSet<object>} seen Seen objects for cycle detection
+ * @returns {{[key: string]: SerializedValue}} Encoded object
+ */
 const encodeObject = (value, path, seen) => {
   if (seen.has(value)) throw new Error(`Cannot serialize circular reference at ${path}`)
   seen.add(value)
@@ -121,6 +152,10 @@ const encodeObject = (value, path, seen) => {
   }
 }
 
+/**
+ * @param {any} value Value to decode
+ * @returns {any} Decoded value
+ */
 const decodeValue = (value) => {
   if (Array.isArray(value)) {
     return value.map((item) => decodeValue(item))

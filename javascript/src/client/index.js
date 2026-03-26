@@ -7,6 +7,8 @@ import safeJSONStringify from "../utils/safe-json-stringify.js"
 import {parseScoundrelJSON} from "../utils/scoundrel-json.js"
 
 const logger = new Logger("Scoundrel Client")
+/** @type {typeof globalThis & Record<string, any>} */
+const globalScope = globalThis
 const generateInstanceId = () => {
   const randomUUID = globalThis.crypto?.randomUUID
   if (typeof randomUUID === "function") return randomUUID.call(globalThis.crypto)
@@ -464,6 +466,11 @@ export default class Client {
 
         if (error) {
           const errorToThrow = new Error(error)
+          /**
+           * Removes internal runtime frames so remote command failures point at user code.
+           * @param {string | undefined | null} stack Stack trace to sanitize
+           * @returns {string[]} Sanitized stack lines
+           */
           const sanitizeStack = (stack) => {
             if (!stack) return []
             return stack
@@ -477,6 +484,12 @@ export default class Client {
               .filter((line) => !line.startsWith("Error:"))
           }
 
+          /**
+           * Prefixes each stack section so combined remote/local traces stay readable.
+           * @param {string} label Stack section label
+           * @param {string | undefined | null} stack Stack trace to format
+           * @returns {string[]} Formatted stack section
+           */
           const formatSection = (label, stack) => {
             const lines = sanitizeStack(stack)
             if (lines.length === 0) return []
@@ -509,6 +522,9 @@ export default class Client {
           throw new Error(`No function by that ID: ${referenceId}`)
         }
 
+        /**
+         * @param {any} responseValue Response value returned by the function
+         */
         const respondWithValue = (responseValue) => {
           if (data.with == "reference") {
             const objectId = ++this.objectsCount
@@ -524,13 +540,16 @@ export default class Client {
         const response = func(...parsedArgs)
 
         if (response && typeof response.then == "function") {
-          response.then(respondWithValue).catch((promiseError) => {
+          response.then(respondWithValue).catch(
+            /** @param {any} promiseError Promise rejection value from the invoked function. */
+            (promiseError) => {
             if (promiseError instanceof Error) {
               this.send({command: "command_response", command_id: commandID, error: promiseError.message, errorStack: promiseError.stack})
             } else {
               this.send({command: "command_response", command_id: commandID, error: String(promiseError)})
             }
-          })
+            }
+          )
         } else {
           respondWithValue(response)
         }
@@ -547,7 +566,7 @@ export default class Client {
         } else if (serverClass !== undefined) {
           object = serverClass
         } else {
-          object = globalThis[data.object_name]
+          object = globalScope[data.object_name]
 
           if (object === undefined) throw new Error(`No such object: ${data.object_name}`)
         }
@@ -561,7 +580,7 @@ export default class Client {
         let object
 
         if (typeof className == "string") {
-          const ClassInstance = this.getClass(className) || globalThis[className]
+          const ClassInstance = this.getClass(className) || globalScope[className]
 
           if (!ClassInstance) throw new Error(`No such class: ${className}`)
 
@@ -586,6 +605,9 @@ export default class Client {
 
         if (!method) throw new Error(`No method called '${data.method_name}' on a '${object.constructor.name}'`)
 
+        /**
+         * @param {any} responseValue Response value returned by the method
+         */
         const respondWithValue = (responseValue) => {
           if (data.with == "reference") {
             const objectId = ++this.objectsCount
@@ -601,13 +623,16 @@ export default class Client {
         const response = method.call(object, ...parsedArgs)
 
         if (response && typeof response.then == "function") {
-          response.then(respondWithValue).catch((promiseError) => {
+          response.then(respondWithValue).catch(
+            /** @param {any} promiseError Promise rejection value from the invoked method. */
+            (promiseError) => {
             if (promiseError instanceof Error) {
               this.send({command: "command_response", command_id: commandID, error: promiseError.message, errorStack: promiseError.stack})
             } else {
               this.send({command: "command_response", command_id: commandID, error: String(promiseError)})
             }
-          })
+            }
+          )
         } else {
           respondWithValue(response)
         }
@@ -642,6 +667,9 @@ export default class Client {
           this.respondToCommand(commandID, {response: attribute})
         }
       } else if (command == "eval") {
+        /**
+         * @param {any} evalResult Evaluated result
+         */
         const respondWithResult = (evalResult) => {
           if (data.with_reference) {
             const objectId = ++this.objectsCount
@@ -701,6 +729,10 @@ export default class Client {
           "eval"
         ])
 
+        /**
+         * @param {string} name Identifier candidate
+         * @returns {boolean} Whether the name can be used as a local variable
+         */
         const isValidIdentifier = (name) =>
           /^(?:[$_]|\p{ID_Start})(?:[$_]|\p{ID_Continue})*$/u.test(name) && !reservedIdentifiers.has(name)
 
@@ -718,13 +750,16 @@ export default class Client {
         const evalResult = evaluator(evalString, ...evalArgs)
 
         if (evalResult && typeof evalResult.then == "function") {
-          evalResult.then(respondWithResult).catch((promiseError) => {
+          evalResult.then(respondWithResult).catch(
+            /** @param {any} promiseError Promise rejection value from the evaluated code. */
+            (promiseError) => {
             if (promiseError instanceof Error) {
               this.send({command: "command_response", command_id: commandID, error: promiseError.message, errorStack: promiseError.stack})
             } else {
               this.send({command: "command_response", command_id: commandID, error: String(promiseError)})
             }
-          })
+            }
+          )
         } else {
           respondWithResult(evalResult)
         }
@@ -819,6 +854,7 @@ export default class Client {
 
       if (arg.__scoundrel_type === "function") {
         const functionId = arg.__scoundrel_function_id
+        /** @type {(...args: any[]) => Promise<any>} */
         const functionWrapper = (...args) => this.callFunctionOnReference(functionId, ...args)
 
         this.trackFunctionWrapper(functionWrapper, functionId)
@@ -1190,6 +1226,10 @@ export default class Client {
     return reference
   }
 
+  /**
+   * Tracks a spawned reference so weak-reference cleanup can release it later.
+   * @param {Reference} reference Reference to track
+   */
   trackReference(reference) {
     if (this.supportsWeakReferences) {
       this.references[reference.id] = new WeakRef(reference)
@@ -1199,6 +1239,11 @@ export default class Client {
     }
   }
 
+  /**
+   * Tracks a function wrapper for finalization-based release.
+   * @param {(...args: any[]) => Promise<any>} functionWrapper Wrapper function exposed to callers
+   * @param {number | null | undefined} functionId Function reference identifier
+   */
   trackFunctionWrapper(functionWrapper, functionId) {
     if (!this.supportsWeakReferences) return
     if (functionId === undefined || functionId === null) return
@@ -1206,12 +1251,17 @@ export default class Client {
     this.referenceReleaseRegistry?.register(functionWrapper, functionId)
   }
 
+  /**
+   * Queues a reference id for release on the next outbound message.
+   * @param {number | null | undefined} referenceId Reference identifier to release
+   */
   queueReleasedReference(referenceId) {
     if (!this.supportsWeakReferences) return
     if (referenceId === undefined || referenceId === null) return
     this.pendingReferenceReleases.add(referenceId)
   }
 
+  /** @returns {number[]} Reference ids queued for release. */
   takeReleasedReferenceIds() {
     if (!this.supportsWeakReferences) return []
     if (this.pendingReferenceReleases.size === 0) return []
@@ -1221,6 +1271,10 @@ export default class Client {
     return ids
   }
 
+  /**
+   * Drops released local object references announced by the peer.
+   * @param {number[] | undefined} referenceIds Reference ids to release
+   */
   releaseReferences(referenceIds) {
     if (!Array.isArray(referenceIds) || referenceIds.length === 0) return
 
