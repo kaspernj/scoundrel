@@ -42,10 +42,10 @@ describe("reference releases", () => {
 
     await runWithWebSocketServerClient(async ({client, serverClient}) => {
       let objectId
-
-      let arrayRef = await client.newObjectReference("Array")
-      objectId = arrayRef.id
-      arrayRef = null
+      {
+        const arrayRef = await client.newObjectReference("Array")
+        objectId = arrayRef.id
+      }
 
       const churn = Array.from({length: 2000}, () => "x".repeat(512))
 

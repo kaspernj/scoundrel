@@ -955,7 +955,7 @@ export default class Client {
   async readAttributeOnReferenceWithReference(referenceId, attributeName, optionsOrArg) {
     const allowedOptions = new Set(["reference", "result", "proxy"])
     /** @type {ReturnOptions} */
-    let options = {reference: true}
+    let options
 
     if (typeof optionsOrArg === "undefined") {
       options = {reference: true}
