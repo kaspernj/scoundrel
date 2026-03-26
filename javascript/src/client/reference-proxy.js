@@ -14,20 +14,46 @@
  * @returns {((...args: any[]) => Promise<any>) & ProxyPromiseMethods} Callable proxy for method or attribute
  */
 const proxyPropertySpawner = (reference, prop) => {
+  /**
+   * @param {...any} args Arguments forwarded to the remote method
+   * @returns {Promise<any>} Remote method result
+   */
+  const callableProxy = (...args) => reference.callMethod(prop, ...args)
   /** @type {((...args: any[]) => Promise<any>) & ProxyPromiseMethods} */
-  const methodProxy = /** @type {any} */ ((...args) => reference.callMethod(prop, ...args))
+  const methodProxy = /** @type {any} */ (callableProxy)
+
+  /**
+   * @param {(value: any) => any} [resolve]
+   *   Promise resolution handler.
+   * @param {(reason: any) => any} [reject]
+   *   Promise rejection handler.
+   * @returns {Promise<any>} Promise-like resolution
+   */
+  const thenProxy = (resolve, reject) => reference.readAttributeResult(prop).then(resolve, reject)
+  /**
+   * @param {(reason: any) => any} [reject]
+   *   Promise rejection handler.
+   * @returns {Promise<any>} Promise-like rejection handling
+   */
+  const catchProxy = (reject) => reference.readAttributeResult(prop).catch(reject)
+  /**
+   * @param {() => any} [callback]
+   *   Callback invoked after settlement.
+   * @returns {Promise<any>} Promise-like finally handling
+   */
+  const finallyProxy = (callback) => reference.readAttributeResult(prop).finally(callback)
 
   Object.defineProperties(methodProxy, {
     then: {
-      value: (resolve, reject) => reference.readAttributeResult(prop).then(resolve, reject),
+      value: thenProxy,
       enumerable: false
     },
     catch: {
-      value: (reject) => reference.readAttributeResult(prop).catch(reject),
+      value: catchProxy,
       enumerable: false
     },
     finally: {
-      value: (callback) => reference.readAttributeResult(prop).finally(callback),
+      value: finallyProxy,
       enumerable: false
     }
   })
@@ -46,6 +72,7 @@ const createChainProxy = (reference) => {
     steps: []
   }
 
+  /** @returns {Promise<any>} Resolved chain result. */
   const executeChain = async () => {
     const baseReference = state.reference
 
@@ -65,17 +92,47 @@ const createChainProxy = (reference) => {
     }
   }
 
+  /**
+   * @param {(value: any) => any} [resolve]
+   *   Promise resolution handler.
+   * @param {(reason: any) => any} [reject]
+   *   Promise rejection handler.
+   * @returns {Promise<any>} Promise-like resolution
+   */
+  const thenChain = (resolve, reject) => executeChain().then(resolve, reject)
+  /**
+   * @param {(reason: any) => any} [reject]
+   *   Promise rejection handler.
+   * @returns {Promise<any>} Promise-like rejection handling
+   */
+  const catchChain = (reject) => executeChain().catch(reject)
+  /**
+   * @param {() => any} [callback]
+   *   Callback invoked after settlement.
+   * @returns {Promise<any>} Promise-like finally handling
+   */
+  const finallyChain = (callback) => executeChain().finally(callback)
+
   const handler = {
+    /**
+     * @param {Record<string, unknown>} target Proxy target
+     * @param {string | symbol} prop Property being accessed
+     * @returns {any} Proxy value for the property
+     */
     get(target, prop) {
       void target
 
       if (prop === "__execChain") return executeChain
-      if (prop === "then") return (resolve, reject) => executeChain().then(resolve, reject)
-      if (prop === "catch") return (reject) => executeChain().catch(reject)
-      if (prop === "finally") return (callback) => executeChain().finally(callback)
+      if (prop === "then") return thenChain
+      if (prop === "catch") return catchChain
+      if (prop === "finally") return finallyChain
 
       if (typeof prop !== "string") return undefined
 
+      /**
+       * @param {...any} args Arguments to append to the chain step
+       * @returns {Proxy} The same chain proxy for further chaining
+       */
       return (...args) => {
         state.steps.push({method: prop, args})
         return chainProxy

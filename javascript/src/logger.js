@@ -1,5 +1,7 @@
 // @ts-check
 
+/** @typedef {"error" | "log" | "warn"} LoggerMethod */
+
 export default class Logger {
   /**
    * Creates a new Logger instance
@@ -47,7 +49,7 @@ export default class Logger {
 
   /**
    * Sends the log message to the console
-   * @param {string} logType Console method name
+   * @param {LoggerMethod} logType Console method name
    * @param  {...any} args Values to log
    * @returns {void} No return value
    */
