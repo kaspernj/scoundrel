@@ -61,17 +61,6 @@ export default class Client {
 
     /** @type {boolean} */
     this.serverControlEnabled = Boolean(options.enableServerControl)
-
-    /** @type {((callback: () => Promise<any>) => Promise<any>) | null} */
-    this._commandWrapper = null
-  }
-
-  /**
-   * Sets a wrapper function that runs around async command execution (e.g., database connection context).
-   * @param {(callback: () => Promise<any>) => Promise<any>} wrapper - Async wrapper function.
-   */
-  setCommandWrapper(wrapper) {
-    this._commandWrapper = wrapper
   }
 
   /**
@@ -631,10 +620,7 @@ export default class Client {
         }
 
         const parsedArgs = this.parseIncomingArgs(data.args)
-        const callMethod = () => method.call(object, ...parsedArgs)
-        const response = this._commandWrapper
-          ? this._commandWrapper(callMethod)
-          : callMethod()
+        const response = method.call(object, ...parsedArgs)
 
         if (response && typeof response.then == "function") {
           response.then(respondWithValue).catch(
