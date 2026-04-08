@@ -542,7 +542,13 @@ export default class Client {
 
         rejectionError.stack = data.stack || rejectionError.stack
         logger.log(() => ["Received unhandled rejection from peer:", data.message])
-        this.onUnhandledRejection?.(rejectionError)
+
+        if (this.onUnhandledRejection) {
+          this.onUnhandledRejection(rejectionError)
+        } else {
+          // Re-throw as unhandled rejection on the server so it surfaces in test output
+          Promise.reject(rejectionError)
+        }
 
         return
       } else if (command == "call_function_on_reference") {
