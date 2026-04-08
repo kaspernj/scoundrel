@@ -21,7 +21,7 @@ pip install -e ".[dev]"
 
 ## Release
 
-Run `npm run release:patch` from a clean checkout. The release script fetches `origin`, checks out `master`, fast-forwards it to the latest `origin/master`, then bumps the patch version and publishes.
+Run `npm run release:patch` from a clean checkout. The release script fetches `origin`, checks out `master`, fast-forwards it to the latest `origin/master`, then bumps the patch version. Before publishing, it fetches again and rebases the local release commit onto the latest `origin/master` so the final `git push origin master` does not fail from a normal remote fast-forward.
 
 ## Usage
 

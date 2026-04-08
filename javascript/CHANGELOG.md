@@ -2,6 +2,7 @@
 
 ## Unreleased
 - Ensure `npm run release:patch` checks out and fast-forwards `master` from `origin/master` before bumping the release version.
+- Rebase the local release commit onto the latest `origin/master` before the final release push to avoid fast-forward rejections.
 - Improve CI test output formatting for easier timeout diagnosis.
 - Support passing function callbacks as reference arguments to remote methods.
 - Release callback references when wrapper functions are garbage collected.

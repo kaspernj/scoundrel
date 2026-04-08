@@ -17,6 +17,12 @@ const ensureLatestMaster = () => {
   run("git merge --ff-only origin/master")
 }
 
+/** Rebase the local release commit onto the latest master right before pushing. */
+const rebaseReleaseCommitOntoLatestMaster = () => {
+  run("git fetch origin")
+  run("git rebase origin/master")
+}
+
 /**
  * Read the current package version from npm.
  * @returns {string} Current package version.
@@ -46,5 +52,6 @@ ensureNpmLogin()
 const version = readVersion()
 run("git add package.json package-lock.json")
 run(`git commit -m "Release v${version}"`)
+rebaseReleaseCommitOntoLatestMaster()
 run("git push origin master")
 run("npm publish")
