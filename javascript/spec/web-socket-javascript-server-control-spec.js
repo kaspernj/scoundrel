@@ -238,5 +238,29 @@ describe("scoundrel - web-socket - javascript - server control", () => {
         {enableServerControl: true}
       )
     })
+
+    it("forwards unhandled rejections from the client to the server", async () => {
+      await runWithWebSocketServerClient(
+        async ({client, serverClient}) => {
+          /** @type {Error[]} */
+          const receivedRejections = []
+
+          serverClient.onUnhandledRejection = (error) => {
+            receivedRejections.push(error)
+          }
+
+          // Simulate an unhandled rejection by sending the command directly
+          client.send({command: "unhandled_rejection", data: {message: "Sound playback failed", stack: "Error: Sound playback failed\n    at playSound (sounds.js:42)"}})
+
+          // Allow the message to propagate
+          await new Promise((resolve) => setTimeout(resolve, 50))
+
+          expect(receivedRejections.length).toEqual(1)
+          expect(receivedRejections[0].message).toEqual("Sound playback failed")
+          expect(receivedRejections[0].stack).toContain("playSound")
+        },
+        {enableServerControl: true}
+      )
+    })
   })
 })
