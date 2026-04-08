@@ -19,6 +19,10 @@ pip install -e ".[dev]"
 
 `PythonWebSocketRunner` prefers `../python/.venv/bin/python` when it exists and falls back to system `python3` otherwise.
 
+## Release
+
+Run `npm run release:patch` from a clean checkout. The release script fetches `origin`, checks out `master`, fast-forwards it to the latest `origin/master`, then bumps the patch version and publishes.
+
 ## Usage
 
 ```js

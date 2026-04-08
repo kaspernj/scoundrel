@@ -10,6 +10,13 @@ const run = (command) => {
   execSync(command, {stdio: "inherit"})
 }
 
+/** Ensure releases start from the latest master before changing package files. */
+const ensureLatestMaster = () => {
+  run("git fetch origin")
+  run("git checkout master")
+  run("git merge --ff-only origin/master")
+}
+
 /**
  * Read the current package version from npm.
  * @returns {string} Current package version.
@@ -29,6 +36,7 @@ const ensureNpmLogin = () => {
 }
 
 // Bumps patch version, installs deps, runs checks/builds, and publishes to npm.
+ensureLatestMaster()
 run("npm version patch --no-git-tag-version")
 run("npm install")
 run("npm run all-checks")
