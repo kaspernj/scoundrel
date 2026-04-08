@@ -61,12 +61,39 @@ export default class Client {
 
     /** @type {boolean} */
     this.serverControlEnabled = Boolean(options.enableServerControl)
+
+    /** @type {((error: Error) => void) | null} */
+    this.onUnhandledRejection = null
+
+    /** @type {((event: PromiseRejectionEvent) => void) | null} */
+    this._unhandledRejectionHandler = null
+
+    if (this.serverControlEnabled && typeof globalThis.addEventListener === "function") {
+      this._unhandledRejectionHandler = (/** @type {PromiseRejectionEvent} */ event) => {
+        const reason = event.reason
+        const error = reason instanceof Error
+          ? {message: reason.message, stack: reason.stack}
+          : {message: String(reason)}
+
+        try {
+          this.send({command: "unhandled_rejection", data: error})
+        } catch {
+          // Connection may be closed
+        }
+      }
+
+      globalThis.addEventListener("unhandledrejection", this._unhandledRejectionHandler)
+    }
   }
 
   /**
    * Closes the client connection
    */
   async close() {
+    if (this._unhandledRejectionHandler && typeof globalThis.removeEventListener === "function") {
+      globalThis.removeEventListener("unhandledrejection", this._unhandledRejectionHandler)
+      this._unhandledRejectionHandler = null
+    }
     this.backend.close()
   }
 
@@ -510,6 +537,14 @@ export default class Client {
           logger.log(() => [`Resolving command ${commandID} with data`, data])
           savedCommand.resolve(data.data)
         }
+      } else if (command == "unhandled_rejection") {
+        const rejectionError = new Error(data.message || "Unhandled promise rejection")
+
+        rejectionError.stack = data.stack || rejectionError.stack
+        logger.log(() => ["Received unhandled rejection from peer:", data.message])
+        this.onUnhandledRejection?.(rejectionError)
+
+        return
       } else if (command == "call_function_on_reference") {
         const referenceId = data.reference_id
         const func = this.objects[referenceId]
