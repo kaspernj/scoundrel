@@ -544,7 +544,11 @@ export default class Client {
         logger.log(() => ["Received unhandled rejection from peer:", data.message])
 
         if (this.onUnhandledRejection) {
-          this.onUnhandledRejection(rejectionError)
+          try {
+            this.onUnhandledRejection(rejectionError)
+          } catch (callbackError) {
+            logger.log(() => ["onUnhandledRejection callback threw:", callbackError])
+          }
         } else {
           // Re-throw as unhandled rejection on the server so it surfaces in test output
           Promise.reject(rejectionError)
