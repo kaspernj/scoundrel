@@ -7,10 +7,10 @@ const logger = new Logger("Scoundrel WebSocket")
 
 // logger.setDebug(true)
 
-export default class WebSocket {
+export default class ClientWebSocket {
   /**
    * Creates a new WebSocket connection handler
-   * @param {WebSocket} ws The WebSocket instance
+   * @param {globalThis.WebSocket | import("ws").WebSocket} ws The WebSocket instance
    */
   constructor(ws) {
     this.ws = ws
