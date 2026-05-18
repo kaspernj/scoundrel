@@ -1182,6 +1182,15 @@ export default class Client {
   }
 
   /**
+   * Replaces a registered object by name, or registers it when it does not exist
+   * @param {string} objectName Object name to replace
+   * @param {any} objectInstance Object instance
+   */
+  replaceObject(objectName, objectInstance) {
+    this._objects[objectName] = objectInstance
+  }
+
+  /**
    * Unregisters an object by name
    * @param {string} objectName Object name to remove
    */
