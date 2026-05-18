@@ -109,6 +109,16 @@ expect(config).toEqual({mode: "test"})
 client.unregisterObject("config")
 ```
 
+Replace a registered object explicitly when a stable name should point at the latest instance:
+
+```js
+client.registerObject("screen", {state: "old"})
+client.replaceObject("screen", {state: "current"})
+
+const screen = await client.getObjectResult("screen")
+expect(screen).toEqual({state: "current"})
+```
+
 Reference/result variants:
 
 ```js

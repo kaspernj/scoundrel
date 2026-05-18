@@ -58,6 +58,32 @@ describe("scoundrel - web-socket - javascript - server control", () => {
       )
     })
 
+    it("keeps registerObject strict for duplicate object names", async () => {
+      await runWithWebSocketServerClient(
+        async ({client}) => {
+          client.registerObject("testSettings", {value: 1})
+
+          expect(() => client.registerObject("testSettings", {value: 2}))
+            .toThrowError("Object already exists: testSettings")
+        },
+        {enableServerControl: true}
+      )
+    })
+
+    it("replaces registered objects explicitly", async () => {
+      await runWithWebSocketServerClient(
+        async ({client, serverClient}) => {
+          client.registerObject("testSettings", {value: 1})
+          client.replaceObject("testSettings", {value: 2})
+
+          const result = await serverClient.getObjectResult("testSettings")
+
+          expect(result).toEqual({value: 2})
+        },
+        {enableServerControl: true}
+      )
+    })
+
     it("rejects invalid scope names so eval fails loudly", async () => {
       await runWithWebSocketServerClient(
         async ({client, serverClient}) => {
