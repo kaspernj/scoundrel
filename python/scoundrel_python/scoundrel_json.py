@@ -5,7 +5,7 @@ import json
 import math
 import re
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, List
+from typing import Any, Callable
 
 TYPE_KEY = "__scoundrel_type__"
 VALUE_KEY = "value"
@@ -15,11 +15,11 @@ VALUE_KEY = "value"
 class ScoundrelTypeHandler:
   type: str
   can_serialize: Callable[[Any], bool]
-  serialize: Callable[[Any], Dict[str, Any]]
-  deserialize: Callable[[Dict[str, Any]], Any]
+  serialize: Callable[[Any], dict[str, Any]]
+  deserialize: Callable[[dict[str, Any]], Any]
 
 
-_type_handlers: List[ScoundrelTypeHandler] = []
+_type_handlers: list[ScoundrelTypeHandler] = []
 
 
 def register_scoundrel_type(handler: ScoundrelTypeHandler) -> None:
@@ -41,7 +41,7 @@ def _find_handler_for_type(type_name: str) -> ScoundrelTypeHandler | None:
   return next((handler for handler in _type_handlers if handler.type == type_name), None)
 
 
-def _ensure_serialized_object(handler: ScoundrelTypeHandler, payload: Any, path: str) -> Dict[str, Any]:
+def _ensure_serialized_object(handler: ScoundrelTypeHandler, payload: Any, path: str) -> dict[str, Any]:
   if not isinstance(payload, dict):
     raise TypeError(f"Scoundrel type '{handler.type}' must serialize to a dict at {path}")
 
@@ -51,7 +51,7 @@ def _ensure_serialized_object(handler: ScoundrelTypeHandler, payload: Any, path:
   return payload
 
 
-def _encode_value(value: Any, path: str, seen: Dict[int, str]) -> Any:
+def _encode_value(value: Any, path: str, seen: dict[int, str]) -> Any:
   if value is None or isinstance(value, (str, bool, int)):
     return value
 
@@ -77,12 +77,12 @@ def _encode_value(value: Any, path: str, seen: Dict[int, str]) -> Any:
   raise TypeError(f"Cannot serialize unsupported type {type(value).__name__} at {path}")
 
 
-def _encode_object(value: Dict[str, Any], path: str, seen: Dict[int, str]) -> Dict[str, Any]:
+def _encode_object(value: dict[str, Any], path: str, seen: dict[int, str]) -> dict[str, Any]:
   if id(value) in seen:
     raise ValueError(f"Cannot serialize circular reference at {path}")
   seen[id(value)] = path
 
-  encoded: Dict[str, Any] = {}
+  encoded: dict[str, Any] = {}
   for key, child in value.items():
     key_str = str(key)
     child_path = f"{path}.{key_str}"
@@ -171,7 +171,7 @@ register_scoundrel_type(
 )
 
 
-def _deserialize_regex(payload: Dict[str, Any]) -> re.Pattern:
+def _deserialize_regex(payload: dict[str, Any]) -> re.Pattern:
   raw = str(payload[VALUE_KEY])
   match = re.match(r"^/(.*)/([a-z]*)$", raw)
   if not match:
