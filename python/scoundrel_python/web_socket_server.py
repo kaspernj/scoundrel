@@ -1,15 +1,18 @@
+from __future__ import annotations
+
 import argparse
 import asyncio
 import importlib
 import os
 import threading
 import uuid
-from typing import Any, Awaitable, Callable, Dict, Optional, Sequence
+from typing import Any, Awaitable, Callable, Sequence
 
 import websockets
 
 from .scoundrel_json import dumps as scoundrel_json_dumps
 from .scoundrel_json import loads as scoundrel_json_loads
+
 
 class CallbackTarget:
   def __init__(self):
@@ -26,14 +29,14 @@ class CallbackTarget:
 
 
 class WebSocketClient:
-  def __init__(self, ws: Any, debug: Optional[Callable[[str], None]] = None) -> None:
+  def __init__(self, ws: Any, debug: Callable[[str], None] | None = None) -> None:
     self.ws: Any = ws
     self.running: bool = True
-    self.objects: Dict[int, Any] = {}
+    self.objects: dict[int, Any] = {}
     self.objects_count: int = 0
     self.instance_id: str = uuid.uuid4().hex
-    self.loop: Optional[asyncio.AbstractEventLoop] = None
-    self.outgoing_commands: Dict[int, asyncio.Future] = {}
+    self.loop: asyncio.AbstractEventLoop | None = None
+    self.outgoing_commands: dict[int, asyncio.Future] = {}
     self.outgoing_commands_count: int = 0
     self._debug: Callable[[str], None] = debug or self._default_debug
     self._debug("WebSocketClient initialized")
@@ -72,7 +75,7 @@ class WebSocketClient:
       else:
         await self.respond_with_error(command_id, f"No such command {command}")
 
-  def handle_command_response(self, data: Dict[str, Any]) -> bool:
+  def handle_command_response(self, data: dict[str, Any]) -> bool:
     command_id = data.get("command_id")
     if not isinstance(command_id, int):
       return False
@@ -89,7 +92,7 @@ class WebSocketClient:
     future.set_result(payload.get("data"))
     return True
 
-  async def send_command(self, command: str, data: Dict[str, Any]) -> Any:
+  async def send_command(self, command: str, data: dict[str, Any]) -> Any:
     if self.loop is None:
       raise RuntimeError("No event loop available for outgoing commands")
 
@@ -124,9 +127,9 @@ class WebSocketClient:
 
   def run_command_in_thread(
     self,
-    command_method: Callable[[int, Dict[str, Any]], Awaitable[None]],
+    command_method: Callable[[int, dict[str, Any]], Awaitable[None]],
     command_id: int,
-    data: Dict[str, Any]
+    data: dict[str, Any]
   ) -> None:
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
@@ -136,9 +139,9 @@ class WebSocketClient:
 
   async def run_command(
     self,
-    command_method: Callable[[int, Dict[str, Any]], Awaitable[None]],
+    command_method: Callable[[int, dict[str, Any]], Awaitable[None]],
     command_id: int,
-    data: Dict[str, Any]
+    data: dict[str, Any]
   ) -> None:
     try:
       await command_method(command_id, data["data"])
@@ -163,7 +166,7 @@ class WebSocketClient:
 
     await self.ws.send(data_json)
 
-  async def command_new_object_with_reference(self, command_id: int, data: Dict[str, Any]) -> None:
+  async def command_new_object_with_reference(self, command_id: int, data: dict[str, Any]) -> None:
     class_name = data["class_name"]
     args = self.parse_arg(data.get("args", []))
 
@@ -177,7 +180,7 @@ class WebSocketClient:
 
     await self.respond_to_command(command_id, {"object_id": object_id, "instance_id": self.instance_id})
 
-  async def command_call_method_on_reference(self, command_id: int, data: Dict[str, Any]) -> None:
+  async def command_call_method_on_reference(self, command_id: int, data: dict[str, Any]) -> None:
     args = self.parse_arg(data["args"])
     method_name = data["method_name"]
     reference_id = data["reference_id"]
@@ -194,20 +197,20 @@ class WebSocketClient:
     else:
       raise ValueError(f"Unknown return type: {with_string}")
 
-    response_payload: Dict[str, Any] = {"response": response}
+    response_payload: dict[str, Any] = {"response": response}
     if with_string == "reference":
       response_payload["instance_id"] = self.instance_id
 
     await self.respond_to_command(command_id, response_payload)
 
-  async def command_import(self, command_id: int, data: Dict[str, Any]) -> None:
+  async def command_import(self, command_id: int, data: dict[str, Any]) -> None:
     import_name = data["import_name"]
     import_result = importlib.import_module(import_name)
     object_id = self.spawn_object(import_result)
 
     await self.respond_to_command(command_id, {"object_id": object_id, "instance_id": self.instance_id})
 
-  async def command_read_attribute(self, command_id: int, data: Dict[str, Any]) -> None:
+  async def command_read_attribute(self, command_id: int, data: dict[str, Any]) -> None:
     attribute_name = data["attribute_name"]
     reference_id = data["reference_id"]
     with_string = data["with"]
@@ -223,13 +226,13 @@ class WebSocketClient:
     else:
       raise ValueError(f"Unknown return type: {with_string}")
 
-    response_payload: Dict[str, Any] = {"response": response}
+    response_payload: dict[str, Any] = {"response": response}
     if with_string == "reference":
       response_payload["instance_id"] = self.instance_id
 
     await self.respond_to_command(command_id, response_payload)
 
-  async def command_serialize_reference(self, command_id: int, data: Dict[str, Any]) -> None:
+  async def command_serialize_reference(self, command_id: int, data: dict[str, Any]) -> None:
     reference_id = data["reference_id"]
     object = self.objects[reference_id]
 
@@ -251,7 +254,7 @@ class WebSocketClient:
     return getattr(object, attribute_name)
 
   @staticmethod
-  def parse_index(attribute_name: Any) -> Optional[int]:
+  def parse_index(attribute_name: Any) -> int | None:
     if isinstance(attribute_name, int):
       return attribute_name
     if isinstance(attribute_name, str) and attribute_name.isdigit():
@@ -308,7 +311,7 @@ class WebSocketClient:
 
     return object_id
 
-  def release_references(self, released_ids: Optional[Sequence[int]]) -> None:
+  def release_references(self, released_ids: Sequence[int] | None) -> None:
     if not isinstance(released_ids, list):
       return
 
@@ -322,7 +325,7 @@ class ScoundrelPythonServer:
     self,
     host: str = "127.0.0.1",
     port: int = 53874,
-    debug: Optional[Callable[[str], None]] = None
+    debug: Callable[[str], None] | None = None
   ) -> None:
     self.host: str = host
     self.port: int = int(port)
@@ -332,7 +335,7 @@ class ScoundrelPythonServer:
   def _default_debug(message: str) -> None:
     print(message, flush=True)
 
-  async def handler(self, ws: Any, path: Optional[str] = None) -> None:
+  async def handler(self, ws: Any, path: str | None = None) -> None:
     del path
     web_socket_client = WebSocketClient(ws, debug=self._debug)
     await web_socket_client.listen()
@@ -346,7 +349,7 @@ class ScoundrelPythonServer:
       await asyncio.Future()
 
   @classmethod
-  def from_argv(cls, argv: Optional[Sequence[str]] = None) -> "ScoundrelPythonServer":
+  def from_argv(cls, argv: Sequence[str] | None = None) -> ScoundrelPythonServer:
     parser = argparse.ArgumentParser(
       prog="Scoundrel Python Server",
       description="Handles Python code dynamically",
@@ -360,7 +363,7 @@ class ScoundrelPythonServer:
     return cls(host=args.host, port=args.port)
 
 
-def main(argv: Optional[Sequence[str]] = None) -> None:
+def main(argv: Sequence[str] | None = None) -> None:
   ScoundrelPythonServer.from_argv(argv).run()
 
 
