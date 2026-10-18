@@ -1,7 +1,7 @@
 {
   "name": "scoundrel-remote-eval",
   "type": "module",
-  "version": "1.0.34",
+  "version": "1.0.35",
   "description": "",
   "main": "build/index.js",
   "types": "build/index.d.ts",
@@ -37,7 +37,7 @@
     "@types/node": "^26.0.1",
     "@types/ws": "^8.18.1",
     "eslint": "^10.1.0",
-    "eslint-plugin-jsdoc": "^64.1.0",
+    "eslint-plugin-jsdoc": "^65.0.2",
     "globals": "^17.0.0",
     "jasmine": "^6.0.0",
     "release-patch": "^1.0.0",

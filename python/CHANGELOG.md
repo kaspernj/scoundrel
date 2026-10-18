@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Resolve ruff violations (future annotations, builtin generics, import sorting, `__all__` sorting) so the Python CI lint gate passes.
 - Prefer the repo-local `python/.venv` interpreter when JavaScript starts the Python WebSocket runner.
 - Improve CI test output formatting for easier timeout diagnosis.
 - Support JavaScript callback functions when invoking Python methods.
